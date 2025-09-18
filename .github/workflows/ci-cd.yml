@@ -55,7 +55,7 @@ jobs:
     - name: Run Backend Tests
       run: |
         cd backend
-        npm test
+        npm run test:ci
       env:
         NODE_ENV: test
         DB_HOST: localhost
