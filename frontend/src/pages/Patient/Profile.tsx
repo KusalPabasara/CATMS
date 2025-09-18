@@ -13,13 +13,10 @@ import {
   alpha,
   IconButton,
   Tooltip,
-  Paper,
   Avatar,
   Divider,
-  Switch,
-  FormControlLabel,
-  Grid,
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
@@ -29,7 +26,6 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Badge as BadgeIcon,
-  LocationOn as LocationIcon,
   CalendarToday as CalendarIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,

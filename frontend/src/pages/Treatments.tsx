@@ -11,10 +11,8 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   Chip,
-  IconButton,
   Tooltip,
   Fab,
   useTheme,
@@ -217,7 +215,7 @@ export default function Treatments() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {treatments.map((treatment, index) => (
+                {treatments.map((treatment) => (
                   <TableRow 
                     key={treatment.treatment_id}
                     sx={{

@@ -17,17 +17,15 @@ import {
   alpha,
   IconButton,
   Tooltip,
-  Paper,
   Chip,
   Divider,
-  Grid,
 } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   CalendarToday as CalendarIcon,
   Person as PersonIcon,
   Schedule as ScheduleIcon,
-  Description as DescriptionIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   BookOnline as BookIcon,
@@ -35,7 +33,6 @@ import {
 import { usePatientStore } from '../../store/patientStore';
 import { useTheme as useCustomTheme } from '../../contexts/ThemeContext';
 import api from '../../services/api';
-import { format } from 'date-fns';
 
 interface Doctor {
   user_id: number;
