@@ -70,16 +70,15 @@ jobs:
         cd frontend
         npm run test:ci
 
-    # Skip build steps temporarily due to TypeScript errors
-    # - name: Build Backend
-    #   run: |
-    #     cd backend
-    #     npm run build
+    - name: Build Backend
+      run: |
+        cd backend
+        npm run build
 
-    # - name: Build Frontend
-    #   run: |
-    #     cd frontend
-    #     npm run build
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
 
   security-scan:
     runs-on: ubuntu-latest
@@ -133,29 +132,23 @@ jobs:
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
-    # Skip Docker builds temporarily due to TypeScript errors
-    # - name: Build and push Backend image
-    #   uses: docker/build-push-action@v5
-    #   with:
-    #     context: ./backend
-    #     file: ./backend/Dockerfile.prod
-    #     push: true
-    #     tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
-    #     labels: ${{ steps.meta.outputs.labels }}
+    - name: Build and push Backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile.prod
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
+        labels: ${{ steps.meta.outputs.labels }}
 
-    # - name: Build and push Frontend image
-    #   uses: docker/build-push-action@v5
-    #   with:
-    #     context: ./frontend
-    #     file: ./frontend/Dockerfile.prod
-    #     push: true
-    #     tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
-    #     labels: ${{ steps.meta.outputs.labels }}
-
-    - name: Skip Docker builds
-      run: |
-        echo "Docker builds skipped due to TypeScript compilation errors"
-        echo "Tests are passing, but build step needs to be fixed"
+    - name: Build and push Frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile.prod
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
+        labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     runs-on: ubuntu-latest
