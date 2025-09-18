@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import sequelize from '../config/database';
 
 interface TreatmentCatalogueAttributes {
   treatment_type_id: number;
@@ -74,4 +74,5 @@ TreatmentCatalogue.init(
 );
 
 export { TreatmentCatalogue };
+export default TreatmentCatalogue;
 export type { TreatmentCatalogueAttributes, TreatmentCatalogueCreationAttributes };

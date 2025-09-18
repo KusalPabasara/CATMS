@@ -109,7 +109,7 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
       const emailTemplate = emailTemplates.treatmentSessionScheduled(
         patient.getDataValue('full_name'),
         new Date(session_date),
-        treatment?.getDataValue('name') || 'treatment'
+        'treatment'
       );
       await sendEmail(
         patient.getDataValue('email'),
@@ -123,7 +123,7 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
       const smsText = smsTemplates.treatmentSessionScheduled(
         patient.getDataValue('full_name'),
         new Date(session_date),
-        treatment?.getDataValue('name') || 'treatment'
+        'treatment'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }

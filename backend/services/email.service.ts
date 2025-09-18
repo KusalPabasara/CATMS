@@ -310,5 +310,6 @@ export const emailTemplates = {
         <p>The MedSync Team</p>
       </div>
     `
-  })
+  }),
+
 };

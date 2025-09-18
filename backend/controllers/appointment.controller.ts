@@ -64,7 +64,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       branch_id,
       appointment_date: appointmentTime,
       reason,
-      status: 'scheduled'
+      status: 'Scheduled'
     });
 
     // Fetch patient and doctor details for notifications
@@ -80,7 +80,7 @@ export const createAppointment = async (req: Request, res: Response) => {
         patient.getDataValue('full_name'),
         appointmentTime,
         doctor?.getDataValue('full_name') || 'your doctor',
-        branch?.getDataValue('name') || 'our clinic',
+        branch?.getDataValue('branch_name') || 'our clinic',
         reason || 'consultation'
       );
       await sendEmail(
@@ -94,7 +94,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     if (patient?.phone) {
       const smsText = smsTemplates.appointmentConfirmation(
         patient.getDataValue('full_name'),
-        appointmentTime,
+        appointmentTime.toISOString(),
         doctor?.getDataValue('full_name') || 'your doctor'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);

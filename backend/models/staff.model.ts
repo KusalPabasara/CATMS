@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import sequelize from '../config/database';
 
 interface StaffAttributes {
   staff_id: number;
@@ -81,4 +81,5 @@ Staff.init(
 );
 
 export { Staff };
+export default Staff;
 export type { StaffAttributes, StaffCreationAttributes };

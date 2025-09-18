@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import sequelize from '../config/database';
 
 interface TreatmentAttributes {
   treatment_id: number;
@@ -10,6 +10,7 @@ interface TreatmentAttributes {
   treatment_date: Date | null;
   cost: number | null;
   doctor_signature: string | null;
+  is_active: boolean | null;
   created_at: Date | null;
 }
 
@@ -24,6 +25,7 @@ class Treatment extends Model<TreatmentAttributes, TreatmentCreationAttributes> 
   public treatment_date!: Date | null;
   public cost!: number | null;
   public doctor_signature!: string | null;
+  public is_active!: boolean | null;
   public created_at!: Date | null;
 
   // Timestamps
@@ -67,6 +69,11 @@ Treatment.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -82,4 +89,5 @@ Treatment.init(
 );
 
 export { Treatment };
+export default Treatment;
 export type { TreatmentAttributes, TreatmentCreationAttributes };

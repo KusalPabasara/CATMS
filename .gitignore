@@ -24,10 +24,10 @@ out/
 # Test files and development artifacts
 test-*
 *-test.*
-*.test.*
-test/
-tests/
-__tests__/
+# Keep test files but ignore test data
+# test/
+# tests/
+# __tests__/
 
 # Development scripts
 start-*.sh

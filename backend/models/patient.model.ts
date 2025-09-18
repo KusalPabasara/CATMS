@@ -1,3 +1,6 @@
+import { DataTypes, Model, Optional } from 'sequelize';
+import sequelize from '../config/database';
+
 interface PatientAttributes {
   patient_id: number;
   full_name: string;
@@ -22,7 +25,7 @@ interface PatientAttributes {
   created_at: Date;
 }
 
-class Patient extends Model<PatientAttributes> implements PatientAttributes {
+class Patient extends Model<PatientAttributes, PatientAttributes> {
   public patient_id!: number;
   public full_name!: string;
   public first_name!: string;
@@ -44,10 +47,6 @@ class Patient extends Model<PatientAttributes> implements PatientAttributes {
   public profile_picture?: string;
   public active!: boolean;
   public created_at!: Date;
-  // Helper method to get data value with type safety
-  getDataValue<K extends keyof PatientAttributes>(key: K): PatientAttributes[K] {
-    return super.getDataValue(key);
-  }
 }
 
 Patient.init({
@@ -78,4 +77,6 @@ Patient.init({
   tableName: 'patients'
 });
 
+export { Patient };
 export default Patient;
+export type { PatientAttributes };

@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import sequelize from '../config/database';
 
 interface BranchAttributes {
   branch_id: number;
@@ -57,4 +57,5 @@ Branch.init(
 );
 
 export { Branch };
+export default Branch;
 export type { BranchAttributes, BranchCreationAttributes };

@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import sequelize from '../config/database';
 
 interface AppointmentAttributes {
   appointment_id: number;
@@ -8,6 +8,7 @@ interface AppointmentAttributes {
   branch_id: number | null;
   appointment_date: Date | null;
   appointment_time: string | null;
+  reason: string | null;
   status: 'Scheduled' | 'Completed' | 'Cancelled' | null;
   created_at: Date | null;
   updated_at: Date | null;
@@ -22,6 +23,7 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
   public branch_id!: number | null;
   public appointment_date!: Date | null;
   public appointment_time!: string | null;
+  public reason!: string | null;
   public status!: 'Scheduled' | 'Completed' | 'Cancelled' | null;
   public created_at!: Date | null;
   public updated_at!: Date | null;
@@ -58,6 +60,10 @@ Appointment.init(
       type: DataTypes.TIME,
       allowNull: true,
     },
+    reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled'),
       allowNull: true,
@@ -82,4 +88,5 @@ Appointment.init(
 );
 
 export { Appointment };
+export default Appointment;
 export type { AppointmentAttributes, AppointmentCreationAttributes };
