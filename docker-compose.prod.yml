@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # MySQL Database with persistent storage
+  mysql:
+    image: mysql:8.0
+    container_name: catms-mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-catms_db}
+      MYSQL_USER: ${MYSQL_USER:-catms_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-catms_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+      - mysql_logs:/var/log/mysql
+    networks:
+      - catms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --max-connections=200
+
+  # Backend API (Production)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: catms-backend-prod
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${MYSQL_DATABASE:-catms_db}
+      - DB_USER=${MYSQL_USER:-catms_user}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-catms_password}
+      - JWT_SECRET=${JWT_SECRET:-supersecurejwt}
+      - PORT=5000
+      - UPLOAD_PATH=/app/uploads
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - catms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+
+  # Frontend (Production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: catms-frontend-prod
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${FRONTEND_API_URL:-http://localhost:5000}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - catms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: catms-nginx-prod
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - catms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+
+  # Redis for caching and sessions (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: catms-redis-prod
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - redis_logs:/var/log/redis
+    networks:
+      - catms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+
+volumes:
+  mysql_data:
+    driver: local
+  mysql_logs:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  redis_data:
+    driver: local
+  redis_logs:
+    driver: local
+
+networks:
+  catms-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

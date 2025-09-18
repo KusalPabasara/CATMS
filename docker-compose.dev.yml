@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: catms-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: catms_db
+      MYSQL_USER: catms_user
+      MYSQL_PASSWORD: catms_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - catms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend API (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development
+    container_name: catms-backend-dev
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=catms_db
+      - DB_USER=catms_user
+      - DB_PASSWORD=catms_password
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - catms-network
+    command: npm run dev
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: catms-frontend-dev
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:5000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - catms-network
+    command: npm run dev
+
+volumes:
+  mysql_data:
+
+networks:
+  catms-network:
+    driver: bridge

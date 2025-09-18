@@ -1,0 +1,360 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+.env.staging
+*.env
+
+# Test files and development artifacts
+test-*
+*-test.*
+*.test.*
+test/
+tests/
+__tests__/
+
+# Development scripts
+start-*.sh
+stop-*.sh
+test-*.sh
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Upload directories (user content)
+uploads/
+backend/uploads/
+frontend/public/uploads/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database files (keep schema and migrations)
+*.db
+*.sqlite
+*.sqlite3
+!database/schema.sql
+!database/migrations/*.sql
+
+# Sensitive files
+LOGIN_CREDENTIALS.txt
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials/
+secrets/
+
+# Development completion files
+STEP*.md
+COMPLETION*.md
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Sensitive files
+LOGIN_CREDENTIALS.txt
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Upload directories (user uploaded content)
+uploads/
+backend/uploads/
+frontend/public/uploads/
+
+# Database dumps
+*.sql
+!database/schema.sql
+!database/migrations/*.sql
+
+# Test files
+test-*.html
+test-*.js
+test-*.png
+test-*.jpg
+test-*.jpeg
+
+# Development scripts
+start-*.sh
+stop-*.sh
+test-*.sh
+
+# IDE and editor files
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local configuration files
+config.local.json
+settings.local.json
+
+# Package manager lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts
+*.map
+*.min.js
+*.min.css
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
+logs/
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Stylelint cache
+.stylelintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development
+.env.test
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Local development files
+local/
+dev/
+development/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.backup
+*.bak
+backups/
+
+# Sensitive configuration
+secrets/
+credentials/
+keys/
+
+# Generated files
+generated/
+auto-generated/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker volumes
+docker-volumes/
