@@ -1,8 +1,8 @@
-# 🏥 CATMS - Clinical Appointment and Treatment Management System
+# CATMS - Clinical Appointment and Treatment Management System
 
 A comprehensive healthcare management system built with modern web technologies, featuring patient management, appointment scheduling, treatment tracking, and billing capabilities.
 
-## ✨ Features
+## Features
 
 - **Patient Management**: Complete patient profiles with medical history
 - **Appointment Scheduling**: Doctor-patient appointment booking system
@@ -14,7 +14,7 @@ A comprehensive healthcare management system built with modern web technologies,
 - **Reports**: Comprehensive reporting and analytics
 - **Audit Logs**: Complete activity tracking for compliance
 
-## 🏗️ Architecture
+## Architecture
 
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
 - **Backend**: Node.js + Express + TypeScript + Sequelize ORM
@@ -22,7 +22,7 @@ A comprehensive healthcare management system built with modern web technologies,
 - **Containerization**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions with automated testing and deployment
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -61,7 +61,7 @@ A comprehensive healthcare management system built with modern web technologies,
    - Backend API: http://localhost:5000
    - Nginx Proxy: http://localhost:8080
 
-## 📋 Available Commands
+## Available Commands
 
 ```bash
 # Development
@@ -95,7 +95,7 @@ make status       # Show service status
 make health       # Check service health
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -119,7 +119,7 @@ make health       # Check service health
 | Nginx | 80 | 8080 |
 | Redis | 6379 | 6379 |
 
-## 🐳 Docker Services
+## Docker Services
 
 - **mysql**: MySQL 8.0 database with persistent storage
 - **backend**: Node.js API server with TypeScript
@@ -127,7 +127,7 @@ make health       # Check service health
 - **nginx**: Reverse proxy with load balancing
 - **redis**: Cache server for sessions and data
 
-## 🔒 Security Features
+## Security Features
 
 - Non-root container execution
 - Security headers via Nginx
@@ -138,7 +138,7 @@ make health       # Check service health
 - File upload restrictions
 - Health monitoring and logging
 
-## 📊 Persistent Data
+## Persistent Data
 
 The following data is persisted across container restarts:
 
@@ -147,7 +147,7 @@ The following data is persisted across container restarts:
 - **Logs**: Application logs in `backend_logs` volume
 - **Cache**: Redis data in `redis_data` volume
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 The project includes a complete CI/CD pipeline with:
 
@@ -157,7 +157,7 @@ The project includes a complete CI/CD pipeline with:
 - **Registry Push**: Automated image publishing
 - **Production Deployment**: Automated deployment with health checks
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 CATMS/
@@ -183,7 +183,7 @@ CATMS/
 └── docker-compose.test.yml # Testing environment
 ```
 
-## 🛠️ Development
+## 🛠Development
 
 ### Backend Development
 
@@ -214,7 +214,7 @@ make backup
 make restore
 ```
 
-## 📚 API Documentation
+## API Documentation
 
 The API documentation is available at `/api/docs` when running the application.
 
@@ -227,7 +227,7 @@ The API documentation is available at `/api/docs` when running the application.
 - `POST /api/invoices` - Create invoice
 - `GET /api/reports` - Generate reports
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -245,7 +245,7 @@ make logs
 docker-compose -f docker-compose.prod.yml logs backend
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -253,24 +253,21 @@ docker-compose -f docker-compose.prod.yml logs backend
 4. Add tests for new functionality
 5. Submit a pull request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - React team for the excellent frontend framework
 - Node.js community for backend tools
 - Docker team for containerization platform
 - MySQL team for the robust database system
 
-## 📞 Support
+## Support
 
 For support and questions:
 - Create an issue in the GitHub repository
 - Check the troubleshooting section
 - Review the deployment documentation
 
----
-
-**Note**: This is a production-ready healthcare management system. Ensure proper security measures and compliance with healthcare regulations before deploying in a production environment.
