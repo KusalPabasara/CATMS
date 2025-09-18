@@ -52,5 +52,17 @@ export const smsTemplates = {
     `Hi ${patientName}! Your insurance claim status has been updated to: ${status}. We'll keep you informed of any changes.`,
 
   emergencyConsult: (doctorName: string, patientName: string) => 
-    `URGENT: Dr. ${doctorName}, emergency consult requested for ${patientName}. Please respond immediately.`
+    `URGENT: Dr. ${doctorName}, emergency consult requested for ${patientName}. Please respond immediately.`,
+
+  appointmentConfirmation: (patientName: string, appointmentTime: string, doctorName: string, clinicName: string, reason: string) => 
+    `Hi ${patientName}! Your appointment is confirmed for ${appointmentTime} with Dr. ${doctorName} at ${clinicName}. Reason: ${reason}. Please arrive 15 minutes early.`,
+
+  invoiceCreated: (patientName: string, invoiceNumber: string, amount: number, dueDate: string) => 
+    `Hi ${patientName}! New invoice ${invoiceNumber} for Rs. ${amount.toFixed(2)} is due on ${dueDate}. Please make payment to avoid late fees.`,
+
+  paymentConfirmation: (patientName: string, amount: number, invoiceNumber: string, status: string) => 
+    `Hi ${patientName}! Payment of Rs. ${amount.toFixed(2)} for invoice ${invoiceNumber} received. Status: ${status}. Thank you!`,
+
+  treatmentSessionScheduled: (patientName: string, sessionDate: string, treatmentName: string) => 
+    `Hi ${patientName}! Your ${treatmentName} session is scheduled for ${sessionDate}. Please arrive 15 minutes early.`
 };

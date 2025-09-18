@@ -106,7 +106,7 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
 
     // Send email notification
     if (patient?.email) {
-      const emailTemplate = emailTemplates.treatmentSessionScheduled(
+      const emailTemplate = (emailTemplates as any).treatmentSessionScheduled(
         patient.getDataValue('full_name'),
         new Date(session_date),
         'treatment'
@@ -122,7 +122,7 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
     if (patient?.phone) {
       const smsText = smsTemplates.treatmentSessionScheduled(
         patient.getDataValue('full_name'),
-        new Date(session_date),
+        new Date(session_date).toLocaleString(),
         'treatment'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);

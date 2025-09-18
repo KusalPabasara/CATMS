@@ -67,7 +67,7 @@ export const createInvoice = async (req: Request, res: Response) => {
     
     // Send invoice notification
     if (patient?.email) {
-      const emailTemplate = emailTemplates.invoiceCreated(
+      const emailTemplate = (emailTemplates as any).invoiceCreated(
         patient.getDataValue('full_name'),
         invoice_number,
         total_amount,
@@ -86,7 +86,7 @@ export const createInvoice = async (req: Request, res: Response) => {
         patient.getDataValue('full_name'),
         invoice_number,
         total_amount,
-        invoiceDueDate
+        invoiceDueDate.toLocaleDateString()
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }

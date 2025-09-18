@@ -57,6 +57,13 @@ export const auditActions = {
   
   // User actions
   USER_CREATED: "User Created",
+  
+  // Generic actions
+  CREATE: "Create",
+  UPDATE: "Update",
+  
+  // Treatment session actions
+  TREATMENT_SESSION_CREATED: "Treatment Session Created",
   USER_UPDATED: "User Updated",
   USER_DEACTIVATED: "User Deactivated",
   

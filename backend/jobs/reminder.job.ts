@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import sequelize from '../config/database';
+import sequelize, { QueryTypes } from '../config/database';
 import { sendEmail, emailTemplates } from '../services/email.service';
 import { sendSMS, smsTemplates } from '../services/sms.service';
 
@@ -149,4 +149,77 @@ export const startPaymentReminderJob = () => {
 export const startAllReminderJobs = () => {
   startAppointmentReminderJob();
   startPaymentReminderJob();
+};
+
+// Individual reminder functions for controllers
+export const scheduleReminder = async (appointmentId: number) => {
+  try {
+    const [appointments] = await sequelize.query(`
+      SELECT 
+        a.appointment_id, 
+        a.appointment_date, 
+        p.email, 
+        p.phone, 
+        p.full_name as patient_name, 
+        u.full_name as doctor_name
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.patient_id
+      JOIN users u ON a.doctor_id = u.user_id
+      WHERE a.appointment_id = :appointmentId
+    `, {
+      replacements: { appointmentId },
+      type: QueryTypes.SELECT
+    });
+
+    if (appointments && Array.isArray(appointments) && appointments.length > 0) {
+      const appointment = appointments[0] as any;
+      const appointmentTime = new Date(appointment.appointment_date).toLocaleString();
+      
+      const emailTemplate = emailTemplates.appointmentReminder(
+        appointment.patient_name,
+        appointmentTime,
+        appointment.doctor_name
+      );
+      
+      await sendEmail(appointment.email, emailTemplate.subject, emailTemplate.html);
+      console.log(`✅ Appointment reminder sent for appointment ${appointmentId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error sending appointment reminder:', error);
+  }
+};
+
+export const schedulePaymentReminder = async (invoiceId: number) => {
+  try {
+    const [invoices] = await sequelize.query(`
+      SELECT 
+        i.invoice_id,
+        i.total_amount,
+        i.due_date,
+        p.email, 
+        p.phone, 
+        p.full_name as patient_name
+      FROM invoices i
+      JOIN patients p ON i.patient_id = p.patient_id
+      WHERE i.invoice_id = :invoiceId
+    `, {
+      replacements: { invoiceId },
+      type: QueryTypes.SELECT
+    });
+
+    if (invoices && Array.isArray(invoices) && invoices.length > 0) {
+      const invoice = invoices[0] as any;
+      
+      const emailTemplate = emailTemplates.paymentReminder(
+        invoice.patient_name,
+        invoice.total_amount,
+        new Date(invoice.due_date).toLocaleDateString()
+      );
+      
+      await sendEmail(invoice.email, emailTemplate.subject, emailTemplate.html);
+      console.log(`✅ Payment reminder sent for invoice ${invoiceId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error sending payment reminder:', error);
+  }
 };

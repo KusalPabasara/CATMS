@@ -563,11 +563,9 @@ export const uploadProfilePicture = async (req: Request, res: Response) => {
 
     // Log audit trail
     console.log('📸 Backend: Logging audit trail...');
-    await logAuditWithRequest(req, auditActions.UPDATE, 'Patient', patientId, {
-      field: 'profile_picture',
-      oldValue: null,
-      newValue: profilePicturePath
-    });
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Patient', patientId, 
+      `Profile picture updated: ${profilePicturePath}`
+    );
 
     console.log('✅ Backend: Profile picture upload successful');
     res.status(200).json({

@@ -29,11 +29,11 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const uploadDocument = async (req: Request, res: Response) => {
   try {
-    if (!req.files || !req.files.document) {
+    if (!req.files || !(req.files as any).document) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const file = req.files.document as UploadedFile;
+    const file = (req.files as any).document as UploadedFile;
     const { 
       patient_id,
       document_type,

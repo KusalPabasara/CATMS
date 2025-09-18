@@ -76,7 +76,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     // Send confirmation email
     if (patient?.email) {
-      const emailTemplate = emailTemplates.appointmentConfirmation(
+      const emailTemplate = (emailTemplates as any).appointmentConfirmation(
         patient.getDataValue('full_name'),
         appointmentTime,
         doctor?.getDataValue('full_name') || 'your doctor',
@@ -95,7 +95,9 @@ export const createAppointment = async (req: Request, res: Response) => {
       const smsText = smsTemplates.appointmentConfirmation(
         patient.getDataValue('full_name'),
         appointmentTime.toISOString(),
-        doctor?.getDataValue('full_name') || 'your doctor'
+        doctor?.getDataValue('full_name') || 'your doctor',
+        branch?.getDataValue('branch_name') || 'our clinic',
+        reason || 'consultation'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }

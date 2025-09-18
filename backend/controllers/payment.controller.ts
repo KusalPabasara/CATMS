@@ -9,7 +9,7 @@ import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16'
+  apiVersion: '2025-08-27.basil'
 });
 
 export const createPayment = async (req: Request, res: Response) => {
@@ -89,7 +89,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // Send payment confirmation
     if (patient?.email) {
-      const emailTemplate = emailTemplates.paymentConfirmation(
+      const emailTemplate = (emailTemplates as any).paymentConfirmation(
         patient.getDataValue('full_name'),
         amount,
         (invoice as any).invoice_number,
@@ -106,7 +106,8 @@ export const createPayment = async (req: Request, res: Response) => {
       const smsText = smsTemplates.paymentConfirmation(
         patient.getDataValue('full_name'),
         amount,
-        (invoice as any).invoice_number
+        (invoice as any).invoice_number,
+        newStatus
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }
