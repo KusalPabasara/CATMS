@@ -3,17 +3,18 @@ import TreatmentSession from "../models/treatment.session.model";
 import Medication from "../models/medication.model";
 import TreatmentProgress from "../models/treatment.progress.model";
 import Patient from "../models/patient.model";
-import Treatment from "../models/treatment.model";
+import Treatments from "../models/treatments.model"; // catalogue model (plural)
 import User from "../models/user.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
 import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 
-export const getAllTreatmentSessions = async (req: Request, res: Response) => {
+export const getAllTreatmentSessions = async (_req: Request, res: Response) => {
   try {
     const sessions = await TreatmentSession.findAll({
       include: [
-        { model: Treatment },
+        // Ensure your associations map session.treatment_id -> Treatments.treatment_id
+        { model: Treatments, as: 'Treatment' },
         { model: Patient },
         { model: User, as: 'Doctor' }
       ],
@@ -29,11 +30,11 @@ export const getAllTreatmentSessions = async (req: Request, res: Response) => {
 export const getPatientTreatmentHistory = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    
+
     const sessions = await TreatmentSession.findAll({
       where: { patient_id: patientId },
       include: [
-        { model: Treatment },
+        { model: Treatments, as: 'Treatment' },
         { model: User, as: 'Doctor' },
         { model: Medication },
         { model: TreatmentProgress }
@@ -75,16 +76,17 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
     });
 
     // Add medications if provided
-    if (medications && medications.length > 0) {
-      const medicationPromises = medications.map((med: any) => 
-        Medication.create({
-          ...med,
-          patient_id,
-          prescribed_by: doctor_id,
-          session_id: session.getDataValue('session_id')
-        })
+    if (Array.isArray(medications) && medications.length > 0) {
+      await Promise.all(
+        medications.map((med: any) =>
+          Medication.create({
+            ...med,
+            patient_id,
+            prescribed_by: doctor_id,
+            session_id: session.getDataValue('session_id')
+          })
+        )
       );
-      await Promise.all(medicationPromises);
     }
 
     // Add progress record if provided
@@ -98,18 +100,18 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
       });
     }
 
-    // Get patient and treatment details for notification
+    // Get patient and treatment details for notification (catalogue)
     const [patient, treatment] = await Promise.all([
       Patient.findByPk(patient_id),
-      Treatment.findByPk(treatment_id)
+      Treatments.findByPk(treatment_id)
     ]);
 
     // Send email notification
-    if (patient?.email) {
+    if (patient?.getDataValue('email')) {
       const emailTemplate = (emailTemplates as any).treatmentSessionScheduled(
         patient.getDataValue('full_name'),
         new Date(session_date),
-        'treatment'
+        treatment?.getDataValue('name') || 'treatment'
       );
       await sendEmail(
         patient.getDataValue('email'),
@@ -119,11 +121,11 @@ export const createTreatmentSession = async (req: Request, res: Response) => {
     }
 
     // Send SMS notification
-    if (patient?.phone) {
+    if (patient?.getDataValue('phone')) {
       const smsText = smsTemplates.treatmentSessionScheduled(
         patient.getDataValue('full_name'),
         new Date(session_date).toLocaleString(),
-        'treatment'
+        treatment?.getDataValue('name') || 'treatment'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }

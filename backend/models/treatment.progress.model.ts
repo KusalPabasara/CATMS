@@ -1,7 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
 import Patient from './patient.model';
-import Treatment from './treatment.model';
+import Treatments from './treatment.model'; // catalogue model
 import TreatmentSession from './treatment.session.model';
 
 class TreatmentProgress extends Model {}
@@ -49,7 +49,7 @@ TreatmentProgress.init({
 
 // Associations
 TreatmentProgress.belongsTo(Patient, { foreignKey: 'patient_id' });
-TreatmentProgress.belongsTo(Treatment, { foreignKey: 'treatment_id' });
+TreatmentProgress.belongsTo(Treatments, { foreignKey: 'treatment_id' });
 TreatmentProgress.belongsTo(TreatmentSession, { foreignKey: 'session_id' });
 
 export default TreatmentProgress;

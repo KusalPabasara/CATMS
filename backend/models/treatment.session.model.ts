@@ -2,7 +2,7 @@ import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
 import Patient from './patient.model';
 import User from './user.model';
-import Treatment from './treatment.model';
+import Treatments from './treatment.model'; // catalogue model (plural table)
 
 class TreatmentSession extends Model {}
 
@@ -46,8 +46,8 @@ TreatmentSession.init({
   tableName: 'treatment_sessions'
 });
 
-// Associations
-TreatmentSession.belongsTo(Treatment, { foreignKey: 'treatment_id' });
+// Associations: alias must match includes used in controllers
+TreatmentSession.belongsTo(Treatments, { foreignKey: 'treatment_id', as: 'Treatment', targetKey: 'treatment_id' });
 TreatmentSession.belongsTo(Patient, { foreignKey: 'patient_id' });
 TreatmentSession.belongsTo(User, { as: 'Doctor', foreignKey: 'doctor_id' });
 
