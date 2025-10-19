@@ -27,8 +27,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Switch,
-  FormControlLabel,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -60,34 +58,15 @@ interface Patient {
   created_at: string;
 }
 
-type PatientForm = {
-  full_name: string;
-  national_id: string;
-  dob: string;
-  gender: string;
-  blood_type: string;
-  phone: string;
-  email: string;
-  address: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  allergies: string;
-  insurance_provider: string;
-  insurance_policy_number: string;
-  active?: boolean; // only used in edit
-};
-
 export default function Patients() {
   const { user } = useAuthStore();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-
-  // Add Patient dialog
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addError, setAddError] = useState('');
-  const [formData, setFormData] = useState<PatientForm>({
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
     full_name: '',
     national_id: '',
     dob: '',
@@ -102,31 +81,6 @@ export default function Patients() {
     insurance_provider: '',
     insurance_policy_number: ''
   });
-
-  // View Patient dialog
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [viewPatient, setViewPatient] = useState<Patient | null>(null);
-
-  // Edit Patient dialog
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editPatient, setEditPatient] = useState<Patient | null>(null);
-  const [editFormData, setEditFormData] = useState<PatientForm>({
-    full_name: '',
-    national_id: '',
-    dob: '',
-    gender: '',
-    blood_type: '',
-    phone: '',
-    email: '',
-    address: '',
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    allergies: '',
-    insurance_provider: '',
-    insurance_policy_number: '',
-    active: true
-  });
-  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     fetchPatients();
@@ -150,34 +104,31 @@ export default function Patients() {
       setPatients(response.data);
     } catch (err) {
       console.error('Error fetching patients:', err);
+      setError('Failed to load patients');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof PatientForm, value: string | boolean, isEdit = false) => {
-    if (isEdit) {
-      setEditFormData(prev => ({ ...prev, [field]: value as any }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value as any }));
-    }
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAddPatient = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setAddError('');
+  const handleAddPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
     try {
       const response = await axios.post('/api/patients', formData);
-      setPatients(prev => [...prev, response.data]);
-      resetAddForm();
+      setPatients([...patients, response.data]);
+      resetForm();
     } catch (err: any) {
-      setAddError(err.response?.data?.error || 'Failed to add patient');
+      setError(err.response?.data?.error || 'Failed to add patient');
       console.error('Error adding patient:', err);
     }
   };
 
-  const resetAddForm = () => {
+  const resetForm = () => {
     setShowAddForm(false);
     setFormData({
       full_name: '',
@@ -194,85 +145,12 @@ export default function Patients() {
       insurance_provider: '',
       insurance_policy_number: ''
     });
-    setAddError('');
-  };
-
-  const openViewDialog = (patient: Patient) => {
-    setViewPatient(patient);
-    setShowViewDialog(true);
-  };
-
-  const closeViewDialog = () => {
-    setShowViewDialog(false);
-    setViewPatient(null);
-  };
-
-  const toInputDate = (dateString?: string) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    if (Number.isNaN(d.getTime())) return '';
-    // format YYYY-MM-DD
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const openEditDialog = (patient: Patient) => {
-    setEditPatient(patient);
-    setEditFormData({
-      full_name: patient.full_name || '',
-      national_id: patient.national_id || '',
-      dob: toInputDate(patient.dob),
-      gender: patient.gender || '',
-      blood_type: patient.blood_type || '',
-      phone: patient.phone || '',
-      email: patient.email || '',
-      address: patient.address || '',
-      emergency_contact_name: patient.emergency_contact_name || '',
-      emergency_contact_phone: patient.emergency_contact_phone || '',
-      allergies: patient.allergies || '',
-      insurance_provider: patient.insurance_provider || '',
-      insurance_policy_number: patient.insurance_policy_number || '',
-      active: patient.active
-    });
-    setEditError('');
-    setShowEditForm(true);
-  };
-
-  const closeEditDialog = () => {
-    setShowEditForm(false);
-    setEditPatient(null);
-    setEditError('');
-  };
-
-  const handleUpdatePatient = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!editPatient) return;
-    setEditError('');
-
-    try {
-      const payload = { ...editFormData };
-      // Some servers may not accept undefined; ensure booleans and strings present
-      if (typeof payload.active === 'undefined') payload.active = editPatient.active;
-
-      const response = await axios.put(`/api/patients/${editPatient.patient_id}`, payload);
-      const updated: Patient = response.data;
-
-      setPatients(prev =>
-        prev.map(p => (p.patient_id === updated.patient_id ? updated : p))
-      );
-      closeEditDialog();
-    } catch (err: any) {
-      setEditError(err.response?.data?.error || 'Failed to update patient');
-      console.error('Error updating patient:', err);
-    }
+    setError('');
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return 'N/A';
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -300,8 +178,6 @@ export default function Patients() {
     );
   }
 
-  const canEdit = user?.role === 'Receptionist' || user?.role === 'System Administrator';
-
   return (
     <Box sx={{ p: 3 }}>
       <Card sx={{ mb: 3 }}>
@@ -323,7 +199,7 @@ export default function Patients() {
               >
                 Export
               </Button>
-              {canEdit && (
+              {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
@@ -402,11 +278,11 @@ export default function Patients() {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
-                        <Button size="small" color="primary" onClick={() => openViewDialog(patient)}>
+                        <Button size="small" color="primary">
                           View
                         </Button>
-                        {canEdit && (
-                          <Button size="small" color="secondary" onClick={() => openEditDialog(patient)}>
+                        {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
+                          <Button size="small" color="secondary">
                             Edit
                           </Button>
                         )}
@@ -437,7 +313,7 @@ export default function Patients() {
       {/* Add Patient Dialog */}
       <Dialog
         open={showAddForm}
-        onClose={resetAddForm}
+        onClose={resetForm}
         maxWidth="md"
         fullWidth
         PaperProps={{
@@ -452,15 +328,15 @@ export default function Patients() {
             <Typography variant="h6" fontWeight="bold">
               Add New Patient
             </Typography>
-            <IconButton onClick={resetAddForm} size="small">
+            <IconButton onClick={resetForm} size="small">
               <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
         <DialogContent dividers>
-          {addError && (
+          {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {addError}
+              {error}
             </Alert>
           )}
 
@@ -618,341 +494,15 @@ export default function Patients() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={resetAddForm} variant="outlined">
+          <Button onClick={resetForm} variant="outlined">
             Cancel
           </Button>
           <Button 
-            onClick={() => handleAddPatient()}
+            onClick={handleAddPatient} 
             variant="contained" 
             startIcon={<AddIcon />}
           >
             Add Patient
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* View Patient Dialog */}
-      <Dialog
-        open={showViewDialog}
-        onClose={closeViewDialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            backgroundImage: 'none',
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              Patient Details
-            </Typography>
-            <IconButton onClick={closeViewDialog} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {viewPatient && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
-              <Box display="flex" alignItems="center" gap={2} sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {viewPatient.full_name.charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{viewPatient.full_name}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {getGenderIcon(viewPatient.gender)} {viewPatient.gender} • DOB: {formatDate(viewPatient.dob)}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">National ID</Typography>
-                <Typography>{viewPatient.national_id || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Phone</Typography>
-                <Typography>{viewPatient.phone || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Email</Typography>
-                <Typography>{viewPatient.email || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Blood Type</Typography>
-                <Typography>{viewPatient.blood_type || '—'}</Typography>
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <Typography variant="subtitle2" color="text.secondary">Address</Typography>
-                <Typography>{viewPatient.address || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Emergency Contact Name</Typography>
-                <Typography>{viewPatient.emergency_contact_name || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Emergency Contact Phone</Typography>
-                <Typography>{viewPatient.emergency_contact_phone || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Insurance Provider</Typography>
-                <Typography>{viewPatient.insurance_provider || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Policy Number</Typography>
-                <Typography>{viewPatient.insurance_policy_number || '—'}</Typography>
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <Typography variant="subtitle2" color="text.secondary">Allergies</Typography>
-                <Typography whiteSpace="pre-wrap">{viewPatient.allergies || '—'}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Registered</Typography>
-                <Typography>{formatDate(viewPatient.created_at)}</Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                {getStatusBadge(viewPatient.active)}
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={closeViewDialog} variant="contained">
-            Close
-          </Button>
-          {canEdit && viewPatient && (
-            <Button
-              variant="outlined"
-              onClick={() => {
-                closeViewDialog();
-                openEditDialog(viewPatient);
-              }}
-            >
-              Edit
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Patient Dialog */}
-      <Dialog
-        open={showEditForm}
-        onClose={closeEditDialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            backgroundImage: 'none',
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              Edit Patient
-            </Typography>
-            <IconButton onClick={closeEditDialog} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {editError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {editError}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleUpdatePatient}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
-              <Box>
-                <TextField
-                  fullWidth
-                  required
-                  label="Full Name"
-                  value={editFormData.full_name}
-                  onChange={(e) => handleInputChange('full_name', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  required
-                  label="National ID"
-                  value={editFormData.national_id}
-                  onChange={(e) => handleInputChange('national_id', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  required
-                  type="date"
-                  label="Date of Birth"
-                  value={editFormData.dob}
-                  onChange={(e) => handleInputChange('dob', e.target.value, true)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-
-              <Box>
-                <FormControl fullWidth required>
-                  <InputLabel>Gender</InputLabel>
-                  <Select
-                    value={editFormData.gender}
-                    onChange={(e) => handleInputChange('gender', e.target.value, true)}
-                    label="Gender"
-                  >
-                    <MenuItem value="Male">Male</MenuItem>
-                    <MenuItem value="Female">Female</MenuItem>
-                    <MenuItem value="Other">Other</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  required
-                  type="tel"
-                  label="Phone"
-                  value={editFormData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  type="email"
-                  label="Email"
-                  value={editFormData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <FormControl fullWidth>
-                  <InputLabel>Blood Type</InputLabel>
-                  <Select
-                    value={editFormData.blood_type}
-                    onChange={(e) => handleInputChange('blood_type', e.target.value, true)}
-                    label="Blood Type"
-                  >
-                    <MenuItem value="">Select Blood Type</MenuItem>
-                    <MenuItem value="A+">A+</MenuItem>
-                    <MenuItem value="A-">A-</MenuItem>
-                    <MenuItem value="B+">B+</MenuItem>
-                    <MenuItem value="B-">B-</MenuItem>
-                    <MenuItem value="AB+">AB+</MenuItem>
-                    <MenuItem value="AB-">AB-</MenuItem>
-                    <MenuItem value="O+">O+</MenuItem>
-                    <MenuItem value="O-">O-</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Address"
-                  value={editFormData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  label="Emergency Contact Name"
-                  value={editFormData.emergency_contact_name}
-                  onChange={(e) => handleInputChange('emergency_contact_name', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  type="tel"
-                  label="Emergency Contact Phone"
-                  value={editFormData.emergency_contact_phone}
-                  onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  label="Insurance Provider"
-                  value={editFormData.insurance_provider}
-                  onChange={(e) => handleInputChange('insurance_provider', e.target.value, true)}
-                />
-              </Box>
-
-              <Box>
-                <TextField
-                  fullWidth
-                  label="Insurance Policy Number"
-                  value={editFormData.insurance_policy_number}
-                  onChange={(e) => handleInputChange('insurance_policy_number', e.target.value, true)}
-                />
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Allergies"
-                  placeholder="List any known allergies..."
-                  value={editFormData.allergies}
-                  onChange={(e) => handleInputChange('allergies', e.target.value, true)}
-                />
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={!!editFormData.active}
-                      onChange={(e) => handleInputChange('active', e.target.checked, true)}
-                    />
-                  }
-                  label="Active"
-                />
-              </Box>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={closeEditDialog} variant="outlined">
-            Cancel
-          </Button>
-          <Button 
-            onClick={() => handleUpdatePatient()}
-            variant="contained"
-          >
-            Save Changes
           </Button>
         </DialogActions>
       </Dialog>

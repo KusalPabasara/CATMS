@@ -3,25 +3,24 @@ import sequelize from '../config/database';
 
 interface BranchAttributes {
   branch_id: number;
-  branch_name: string;        // maps to DB column "name"
-  location?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  created_at?: Date | null;   // keep only if you add the column in DB (see note)
+  branch_name: string | null;
+  location: string | null;
+  phone: string | null;
+  created_at: Date | null;
 }
 
-type BranchCreationAttributes = Optional<
-  BranchAttributes,
-  'branch_id' | 'location' | 'phone' | 'email' | 'created_at'
->;
+interface BranchCreationAttributes extends Optional<BranchAttributes, 'branch_id' | 'created_at'> {}
 
 class Branch extends Model<BranchAttributes, BranchCreationAttributes> implements BranchAttributes {
   public branch_id!: number;
-  public branch_name!: string;
+  public branch_name!: string | null;
   public location!: string | null;
   public phone!: string | null;
-  public email!: string | null;
   public created_at!: Date | null;
+
+  // Timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 Branch.init(
@@ -31,36 +30,29 @@ Branch.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    // IMPORTANT: your DB column is "name"; we expose it in the model as "branch_name"
     branch_name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      field: 'name',
-    },
-    location: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    phone: {
       type: DataTypes.STRING(20),
       allowNull: true,
     },
-    email: {
-      type: DataTypes.STRING(255),
+    location: {
+      type: DataTypes.STRING(20),
       allowNull: true,
     },
-    // Keep this only if you add the column in DB (recommended for compatibility)
+    phone: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: true,
-      defaultValue: null,
+      defaultValue: DataTypes.NOW,
     },
   },
   {
     sequelize,
-    tableName: 'branches', // match your schema
-    timestamps: false,      // branches table has no createdAt/updatedAt managed by Sequelize
-    freezeTableName: true,  // don't auto-pluralize
+    tableName: 'branch',
+    timestamps: false,
+    freezeTableName: true,
   }
 );
 

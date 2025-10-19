@@ -18,16 +18,6 @@ import {
   useTheme,
   alpha,
   Skeleton,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  FormControlLabel,
-  Switch,
-  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,9 +26,6 @@ import {
   AttachMoney as MoneyIcon,
   Category as CategoryIcon,
   Description as DescriptionIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material';
 import api from '../services/api';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
@@ -55,28 +42,6 @@ interface Treatment {
   is_active: boolean;
 }
 
-type TreatmentForm = {
-  name: string;
-  description: string;
-  duration: string; // keep as string for input; convert to number in payload
-  cost: string;     // keep as string for input; convert to number in payload
-  category: string;
-  icd10_code: string;
-  cpt_code: string;
-  is_active: boolean;
-};
-
-const defaultForm: TreatmentForm = {
-  name: '',
-  description: '',
-  duration: '',
-  cost: '',
-  category: '',
-  icd10_code: '',
-  cpt_code: '',
-  is_active: true,
-};
-
 export default function Treatments() {
   const theme = useTheme();
   const { isDark } = useCustomTheme();
@@ -84,23 +49,9 @@ export default function Treatments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Dialog states
-  const [openAdd, setOpenAdd] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
-  const [openDelete, setOpenDelete] = useState(false);
-
-  // Forms and selected item
-  const [form, setForm] = useState<TreatmentForm>(defaultForm);
-  const [editTarget, setEditTarget] = useState<Treatment | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Treatment | null>(null);
-
-  const [formError, setFormError] = useState('');
-
   useEffect(() => {
     const fetchTreatments = async () => {
       try {
-        setError('');
-        setLoading(true);
         const response = await api.get('/api/treatments');
         setTreatments(response.data);
       } catch (err: any) {
@@ -121,7 +72,7 @@ export default function Treatments() {
   };
 
   const getCategoryColor = (category: string | null) => {
-    if (!category) return 'default' as const;
+    if (!category) return 'default';
     const categoryColors: { [key: string]: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' } = {
       'General': 'primary',
       'Surgery': 'error',
@@ -131,121 +82,6 @@ export default function Treatments() {
       'Preventive': 'secondary',
     };
     return categoryColors[category] || 'default';
-  };
-
-  // Helpers for dialogs
-  const openAddDialog = () => {
-    setForm(defaultForm);
-    setFormError('');
-    setOpenAdd(true);
-  };
-  const closeAddDialog = () => {
-    setOpenAdd(false);
-  };
-
-  const openEditDialog = (t: Treatment) => {
-    setEditTarget(t);
-    setForm({
-      name: t.name || '',
-      description: t.description || '',
-      duration: t.duration != null ? String(t.duration) : '',
-      cost: t.cost != null ? String(t.cost) : '',
-      category: t.category || '',
-      icd10_code: t.icd10_code || '',
-      cpt_code: t.cpt_code || '',
-      is_active: !!t.is_active,
-    });
-    setFormError('');
-    setOpenEdit(true);
-  };
-  const closeEditDialog = () => {
-    setOpenEdit(false);
-    setEditTarget(null);
-  };
-
-  const openDeleteDialog = (t: Treatment) => {
-    setDeleteTarget(t);
-    setOpenDelete(true);
-  };
-  const closeDeleteDialog = () => {
-    setOpenDelete(false);
-    setDeleteTarget(null);
-  };
-
-  const validateForm = (f: TreatmentForm) => {
-    if (!f.name.trim()) return 'Name is required';
-    if (!f.cost || isNaN(Number(f.cost))) return 'Valid cost is required';
-    if (Number(f.cost) < 0) return 'Cost cannot be negative';
-    if (f.duration && (isNaN(Number(f.duration)) || Number(f.duration) < 0)) return 'Duration must be a positive number';
-    return '';
-  };
-
-  const handleCreate = async () => {
-    const errMsg = validateForm(form);
-    if (errMsg) {
-      setFormError(errMsg);
-      return;
-    }
-    try {
-      setFormError('');
-      const payload = {
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        duration: form.duration ? Number(form.duration) : null,
-        cost: Number(form.cost),
-        category: form.category || null,
-        icd10_code: form.icd10_code || null,
-        cpt_code: form.cpt_code || null,
-        is_active: !!form.is_active,
-      };
-      const { data } = await api.post('/api/treatments', payload);
-      setTreatments(prev => [data, ...prev]);
-      setOpenAdd(false);
-    } catch (err: any) {
-      setFormError(err.response?.data?.error || 'Failed to create treatment');
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!editTarget) return;
-    const errMsg = validateForm(form);
-    if (errMsg) {
-      setFormError(errMsg);
-      return;
-    }
-    try {
-      setFormError('');
-      const payload = {
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        duration: form.duration ? Number(form.duration) : null,
-        cost: Number(form.cost),
-        category: form.category || null,
-        icd10_code: form.icd10_code || null,
-        cpt_code: form.cpt_code || null,
-        is_active: !!form.is_active,
-      };
-      const { data } = await api.put(`/api/treatments/${editTarget.treatment_id}`, payload);
-      setTreatments(prev => prev.map(t => (t.treatment_id === data.treatment_id ? data : t)));
-      setOpenEdit(false);
-      setEditTarget(null);
-    } catch (err: any) {
-      setFormError(err.response?.data?.error || 'Failed to update treatment');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/api/treatments/${deleteTarget.treatment_id}`);
-      setTreatments(prev => prev.filter(t => t.treatment_id !== deleteTarget.treatment_id));
-      setOpenDelete(false);
-      setDeleteTarget(null);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete treatment');
-      setOpenDelete(false);
-      setDeleteTarget(null);
-    }
   };
 
   if (loading) {
@@ -376,11 +212,6 @@ export default function Treatments() {
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      Actions
-                    </Typography>
-                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -402,20 +233,11 @@ export default function Treatments() {
                       <Typography variant="subtitle2" fontWeight={600} color="text.primary">
                         {treatment.name}
                       </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
-                        {treatment.icd10_code && (
-                          <Chip size="small" label={`ICD-10: ${treatment.icd10_code}`} />
-                        )}
-                        {treatment.cpt_code && (
-                          <Chip size="small" label={`CPT: ${treatment.cpt_code}`} />
-                        )}
-                        <Chip
-                          size="small"
-                          label={treatment.is_active ? 'Active' : 'Inactive'}
-                          color={treatment.is_active ? 'success' : 'default'}
-                          variant={treatment.is_active ? 'filled' : 'outlined'}
-                        />
-                      </Box>
+                      {treatment.icd10_code && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          ICD-10: {treatment.icd10_code}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography 
@@ -477,20 +299,6 @@ export default function Treatments() {
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell align="right">
-                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                        <Tooltip title="Edit">
-                          <IconButton color="primary" size="small" onClick={() => openEditDialog(treatment)}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton color="error" size="small" onClick={() => openDeleteDialog(treatment)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -503,7 +311,6 @@ export default function Treatments() {
       <Tooltip title="Add New Treatment" placement="left">
         <Fab
           color="primary"
-          onClick={openAddDialog}
           sx={{
             position: 'fixed',
             bottom: 24,
@@ -526,97 +333,8 @@ export default function Treatments() {
           <AddIcon />
         </Fab>
       </Tooltip>
-
-      {/* Add Treatment Dialog */}
-      <Dialog open={openAdd} onClose={closeAddDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" fontWeight="bold">Add Treatment</Typography>
-            <IconButton onClick={closeAddDialog} size="small"><CloseIcon /></IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
-          <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-            <TextField label="Name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
-            <TextField label="Cost" value={form.cost} onChange={e => setForm(p => ({ ...p, cost: e.target.value }))} required type="number" inputProps={{ step: '0.01', min: 0 }} />
-            <TextField label="Duration (minutes)" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} type="number" inputProps={{ step: '1', min: 0 }} />
-            <TextField select label="Category" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="General">General</MenuItem>
-              <MenuItem value="Surgery">Surgery</MenuItem>
-              <MenuItem value="Therapy">Therapy</MenuItem>
-              <MenuItem value="Diagnostic">Diagnostic</MenuItem>
-              <MenuItem value="Emergency">Emergency</MenuItem>
-              <MenuItem value="Preventive">Preventive</MenuItem>
-            </TextField>
-            <TextField label="ICD-10 Code" value={form.icd10_code} onChange={e => setForm(p => ({ ...p, icd10_code: e.target.value }))} />
-            <TextField label="CPT Code" value={form.cpt_code} onChange={e => setForm(p => ({ ...p, cpt_code: e.target.value }))} />
-            <TextField label="Description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} multiline rows={3} sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }} />
-            <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-              <FormControlLabel control={<Switch checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />} label="Active" />
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeAddDialog} variant="outlined">Cancel</Button>
-          <Button onClick={handleCreate} variant="contained" startIcon={<AddIcon />}>Create</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Treatment Dialog */}
-      <Dialog open={openEdit} onClose={closeEditDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" fontWeight="bold">Edit Treatment</Typography>
-            <IconButton onClick={closeEditDialog} size="small"><CloseIcon /></IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
-          <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-            <TextField label="Name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
-            <TextField label="Cost" value={form.cost} onChange={e => setForm(p => ({ ...p, cost: e.target.value }))} required type="number" inputProps={{ step: '0.01', min: 0 }} />
-            <TextField label="Duration (minutes)" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} type="number" inputProps={{ step: '1', min: 0 }} />
-            <TextField select label="Category" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="General">General</MenuItem>
-              <MenuItem value="Surgery">Surgery</MenuItem>
-              <MenuItem value="Therapy">Therapy</MenuItem>
-              <MenuItem value="Diagnostic">Diagnostic</MenuItem>
-              <MenuItem value="Emergency">Emergency</MenuItem>
-              <MenuItem value="Preventive">Preventive</MenuItem>
-            </TextField>
-            <TextField label="ICD-10 Code" value={form.icd10_code} onChange={e => setForm(p => ({ ...p, icd10_code: e.target.value }))} />
-            <TextField label="CPT Code" value={form.cpt_code} onChange={e => setForm(p => ({ ...p, cpt_code: e.target.value }))} />
-            <TextField label="Description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} multiline rows={3} sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }} />
-            <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-              <FormControlLabel control={<Switch checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />} label="Active" />
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeEditDialog} variant="outlined">Cancel</Button>
-          <Button onClick={handleUpdate} variant="contained">Save Changes</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirm Dialog */}
-      <Dialog open={openDelete} onClose={closeDeleteDialog} maxWidth="xs" fullWidth>
-        <DialogTitle>Delete Treatment</DialogTitle>
-        <DialogContent dividers>
-          <Typography>
-            Are you sure you want to delete treatment{' '}
-            <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={closeDeleteDialog} variant="outlined">Cancel</Button>
-          <Button onClick={handleDelete} variant="contained" color="error" startIcon={<DeleteIcon />}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
+
+
