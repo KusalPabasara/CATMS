@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Test MySQL Database
+  mysql-test:
+    image: mysql:8.0
+    container_name: catms-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: testpassword
+      MYSQL_DATABASE: catms_test
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+    networks:
+      - catms-test-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Test Backend
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: catms-backend-test
+    environment:
+      - NODE_ENV=test
+      - DB_HOST=mysql-test
+      - DB_PORT=3306
+      - DB_NAME=catms_test
+      - DB_USER=test_user
+      - DB_PASSWORD=test_password
+      - JWT_SECRET=test_secret
+      - PORT=5000
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mysql-test
+    networks:
+      - catms-test-network
+    command: ["node", "dist/server.js"]
+
+  # Test Frontend
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: catms-frontend-test
+    environment:
+      - NODE_ENV=test
+      - VITE_API_URL=http://localhost:5001
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend-test
+    networks:
+      - catms-test-network
+
+volumes:
+  mysql_test_data:
+
+networks:
+  catms-test-network:
+    driver: bridge
