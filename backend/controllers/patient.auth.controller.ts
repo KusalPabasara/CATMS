@@ -149,8 +149,6 @@ export const patientRegister = async (req: Request, res: Response) => {
     // Create patient account
     const patient = await Patient.create({
       full_name,
-      first_name,
-      last_name,
       email,
       password_hash,
       phone,
