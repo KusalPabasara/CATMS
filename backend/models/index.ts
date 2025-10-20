@@ -8,6 +8,8 @@ import Invoice from './invoice.model'
 import Payment from './payment.model'
 import InsuranceClaim from './insurance_claim.model'
 import AuditLog from './audit_log.model'
+import User from './user.model'
+import Role from './role.model'
 
 // Associations for new ER diagram structure
 Staff.belongsTo(Branch, { foreignKey: 'branch_id', as: 'Branch' })
@@ -41,6 +43,12 @@ Invoice.hasMany(InsuranceClaim, { foreignKey: 'invoice_id', as: 'InsuranceClaims
 
 AuditLog.belongsTo(Staff, { foreignKey: 'staff_id', as: 'Staff' })
 Staff.hasMany(AuditLog, { foreignKey: 'staff_id', as: 'AuditLogs' })
+
+// User and Role associations
+User.belongsTo(Role, { foreignKey: 'role_id', as: 'Role' })
+User.belongsTo(Branch, { foreignKey: 'branch_id', as: 'Branch' })
+Role.hasMany(User, { foreignKey: 'role_id', as: 'Users' })
+Branch.hasMany(User, { foreignKey: 'branch_id', as: 'Users' })
 
 export default {
   Branch,

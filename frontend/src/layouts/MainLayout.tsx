@@ -33,6 +33,7 @@ import {
   Menu as MenuIcon,
   LocalHospital as HospitalIcon,
   Psychology as PsychologyIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -57,6 +58,7 @@ export default function MainLayout() {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: <DashboardIcon /> },
     { name: 'Patients', href: '/admin/patients', icon: <PeopleIcon /> },
+    { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
     { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
     { name: 'Calendar View', href: '/admin/appointments/calendar', icon: <EventIcon /> },
     { name: 'Treatments', href: '/admin/treatments', icon: <MedicalIcon /> },

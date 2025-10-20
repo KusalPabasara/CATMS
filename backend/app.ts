@@ -60,11 +60,13 @@ import aiMedicalRoutes from './routes/ai-medical.routes';
 import treatmentCatalogueRoutes from './routes/treatment_catalogue.routes';
 import userRoutes from './routes/user.routes';
 import patientAuthRoutes from './routes/patient.auth.routes';
+import doctorRoutes from './routes/doctor.routes';
 
 // Routes
 app.use('/api/patient-auth', patientAuthRoutes); // Patient self-service - different path
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes); // Admin patient management
+app.use('/api/doctors', doctorRoutes); // Admin doctor management
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/treatments', treatmentRoutes);

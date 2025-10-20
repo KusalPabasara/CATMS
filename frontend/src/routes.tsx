@@ -3,6 +3,7 @@ import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import Doctors from './pages/Doctors';
 import Appointments from './pages/Appointments';
 import CalendarView from './pages/Appointments/CalendarView';
 import Treatments from './pages/Treatments';
@@ -53,6 +54,7 @@ export default function AppRoutes() {
         <Route path="/admin" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<Patients />} />
+          <Route path="doctors" element={<Doctors />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="appointments/calendar" element={<CalendarView />} />
           <Route path="treatments" element={<Treatments />} />

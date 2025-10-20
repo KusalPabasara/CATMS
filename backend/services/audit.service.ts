@@ -57,6 +57,9 @@ export const auditActions = {
   
   // User actions
   USER_CREATED: "User Created",
+  USER_UPDATED: "User Updated",
+  USER_DELETED: "User Deleted",
+  USER_PASSWORD_RESET: "User Password Reset",
   
   // Generic actions
   CREATE: "Create",
