@@ -49,6 +49,13 @@ export default function PatientLogin() {
     setLoading(true);
     setError('');
 
+    // Validate password
+    if (!formData.password || formData.password.trim().length === 0) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
     // Validate email format if using email login
     if (loginType === 'email' && (!formData.email || !formData.email.includes('@') || !formData.email.includes('.'))) {
       setError('Please enter a valid email address');
@@ -336,6 +343,12 @@ export default function PatientLogin() {
               onClick={() => {
                 console.log('🔐 Frontend: Switching to email login');
                 setLoginType('email');
+                setError(''); // Clear any existing errors
+                // Reset form data when switching to email
+                setFormData(prev => ({
+                  ...prev,
+                  national_id: '', // Clear national_id when switching to email
+                }));
               }}
               startIcon={<EmailIcon />}
               sx={{ 
@@ -362,6 +375,12 @@ export default function PatientLogin() {
               onClick={() => {
                 console.log('🔐 Frontend: Switching to national_id login');
                 setLoginType('national_id');
+                setError(''); // Clear any existing errors
+                // Reset form data when switching to national_id
+                setFormData(prev => ({
+                  ...prev,
+                  email: '', // Clear email when switching to national_id
+                }));
               }}
               startIcon={<PersonIcon />}
               sx={{ 
