@@ -384,7 +384,7 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Doctor not found' });
     }
 
-    // Create appointment
+    // Create appointment as Pending (to be approved by staff)
     const appointment = await Appointment.create({
       patient_id: patientId,
       doctor_id,
@@ -393,7 +393,7 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
       reason,
       priority,
       notes,
-      status: 'Scheduled',
+      status: 'Pending' as any,
       created_at: new Date()
     });
 
@@ -419,7 +419,7 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
 
     res.status(201).json({
       appointment: createdAppointment,
-      message: 'Appointment created successfully'
+      message: 'Appointment request submitted and awaiting approval.'
     });
   } catch (err) {
     console.error('Create patient appointment error:', err);
@@ -430,17 +430,22 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
 // Get Doctors for Patient
 export const getPatientDoctors = async (req: Request, res: Response) => {
   try {
-    // Import here to avoid circular dependencies
-    const User = require('../models/user.model').default;
+    // Use Staff table aligned with current schema
+    const Staff = require('../models/staff.model').default;
 
-    const doctors = await User.findAll({
-      where: {
-        role: 'Doctor',
-        active: true
-      },
-      attributes: ['user_id', 'full_name', 'email', 'specialty'],
-      order: [['full_name', 'ASC']]
+    const staffDoctors = await Staff.findAll({
+      where: { role: 'Doctor', is_active: true },
+      attributes: ['staff_id', 'first_name', 'last_name', 'email', 'speciality'],
+      order: [['first_name', 'ASC'], ['last_name', 'ASC']]
     });
+
+    // Map to frontend expected shape
+    const doctors = staffDoctors.map((d: any) => ({
+      user_id: d.getDataValue('staff_id'),
+      full_name: `${d.getDataValue('first_name') || ''} ${d.getDataValue('last_name') || ''}`.trim(),
+      email: d.getDataValue('email') || '',
+      specialty: d.getDataValue('speciality') || null
+    }));
 
     res.status(200).json(doctors);
   } catch (err) {
@@ -452,16 +457,24 @@ export const getPatientDoctors = async (req: Request, res: Response) => {
 // Get Treatments for Patient
 export const getPatientTreatments = async (req: Request, res: Response) => {
   try {
-    // Import here to avoid circular dependencies
-    const Treatment = require('../models/treatment.model').default;
+    // Use TreatmentCatalogue aligned with current schema
+    const TreatmentCatalogue = require('../models/treatment_catalogue.model').default;
 
-    const treatments = await Treatment.findAll({
-      where: {
-        is_active: true
-      },
-      attributes: ['treatment_id', 'name', 'description', 'cost', 'duration', 'category'],
-      order: [['name', 'ASC']]
+    const catalogue = await TreatmentCatalogue.findAll({
+      where: { is_active: true },
+      attributes: ['treatment_type_id', 'treatment_name', 'description', 'standard_cost', 'category'],
+      order: [['treatment_name', 'ASC']]
     });
+
+    // Map to frontend expected shape
+    const treatments = catalogue.map((t: any) => ({
+      treatment_id: t.getDataValue('treatment_type_id'),
+      name: t.getDataValue('treatment_name'),
+      description: t.getDataValue('description'),
+      cost: Number(t.getDataValue('standard_cost') || 0),
+      duration: 30,
+      category: t.getDataValue('category')
+    }));
 
     res.status(200).json(treatments);
   } catch (err) {

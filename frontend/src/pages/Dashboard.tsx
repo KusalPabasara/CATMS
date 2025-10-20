@@ -2,6 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import api from "../services/api";
 import { useReactToPrint } from "react-to-print";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
+import MetricCard from "../components/MetricCard";
+import { formatLKR } from "../utils/currency"; // Currency formatting utility
 import {
   Bar,
   Line,
@@ -15,9 +18,7 @@ import {
 } from 'chart.js';
 import { useAuthStore } from '../store/authStore';
 import ReportPrint from './Dashboard/ReportPrint';
-import ThemeToggle from '../components/ThemeToggle';
-import MetricCard from '../components/MetricCard';
-import { formatLKR } from '../utils/currency';
+import AdminBookingModal from '../components/AdminBookingModal';
 import {
   Box,
   Card,
@@ -90,6 +91,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const fetchedOnceRef = useRef(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
   
   const [overview, setOverview] = useState<DashboardData>({
     totalAppointments: 0,
@@ -122,10 +125,16 @@ export default function Dashboard() {
   } as any);
 
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
+    if (!user) return;
+    if (fetchedOnceRef.current) return; // prevent duplicate fetches in StrictMode/dev
+    fetchedOnceRef.current = true;
+    fetchDashboardData();
   }, [user]);
+
+  const handleBookingSuccess = () => {
+    // Refresh dashboard data after successful booking
+    fetchDashboardData();
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -335,7 +344,7 @@ export default function Dashboard() {
                     variant="contained"
                     color="success"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/appointments?action=book')}
+                    onClick={() => setBookingModalOpen(true)}
                     sx={{ textTransform: 'none' }}
                   >
                     Book Appointment
@@ -634,11 +643,12 @@ export default function Dashboard() {
       </Box>
 
       {/* Advanced Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 3 }}>
         {/* Top Treatments Chart */}
         {(user?.role === 'System Administrator' || user?.role === 'Branch Manager') && topTreatments.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Most Used Treatments</h3>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>Most Used Treatments</Typography>
             <Bar
               data={{
                 labels: topTreatments.map((t: any) => t.treatment_name),
@@ -668,13 +678,15 @@ export default function Dashboard() {
                 }
               }}
             />
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Insurance Claim Status */}
         {(user?.role === 'System Administrator' || user?.role === 'Branch Manager') && insuranceClaimStatus.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Insurance Claim Status</h3>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>Insurance Claim Status</Typography>
             <Doughnut
               data={{
                 labels: insuranceClaimStatus.map((s: any) => s.claim_status),
@@ -711,7 +723,8 @@ export default function Dashboard() {
                 }
               }}
             />
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Appointment Status Distribution - Modern Progress Bars */}
@@ -780,7 +793,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
-      </div>
+      </Box>
 
       {/* Revenue by Specialty Chart */}
       {(user?.role === 'System Administrator' || user?.role === 'Branch Manager') && revenueBySpecialty.length > 0 && (
@@ -983,7 +996,7 @@ export default function Dashboard() {
             <Box>
               <Card 
                 component="a" 
-                href="/appointments"
+                href="/admin/appointments"
                 sx={{ 
                   textDecoration: 'none',
                   cursor: 'pointer',
@@ -1015,7 +1028,7 @@ export default function Dashboard() {
             <Box>
               <Card 
                 component="a" 
-                href="/billing"
+                href="/admin/billing"
                 sx={{ 
                   textDecoration: 'none',
                   cursor: 'pointer',
@@ -1047,7 +1060,7 @@ export default function Dashboard() {
             <Box>
               <Card 
                 component="a" 
-                href="/patients"
+                href="/admin/patients"
                 sx={{ 
                   textDecoration: 'none',
                   cursor: 'pointer',
@@ -1088,6 +1101,13 @@ export default function Dashboard() {
           userName={user?.email}
         />
       </Box>
+
+      {/* Admin Booking Modal */}
+      <AdminBookingModal
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        onSuccess={handleBookingSuccess}
+      />
     </Box>
   );
 }

@@ -55,7 +55,7 @@ export default function Login() {
       const payload = JSON.parse(atob(tokenParts[1]));
       
       login(data.token, payload);
-      navigate('/');
+      navigate('/admin');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {

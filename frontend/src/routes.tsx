@@ -14,6 +14,7 @@ import PatientDashboard from './pages/Patient/Dashboard';
 import BookAppointment from './pages/Patient/BookAppointment';
 import AppointmentHistory from './pages/Patient/AppointmentHistory';
 import PatientProfile from './pages/Patient/Profile';
+import DoctorProfile from './pages/DoctorProfile';
 import MainLayout from './layouts/MainLayout';
 import { useAuthStore } from './store/authStore';
 import { usePatientStore } from './store/patientStore';
@@ -25,8 +26,19 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Homepage />} />
+      {/* Public Routes with smart landing redirect */}
+      <Route
+        path="/"
+        element={
+          token ? (
+            <Navigate to="/admin" replace />
+          ) : patientAuthenticated && patient ? (
+            <Navigate to="/patient/dashboard" replace />
+          ) : (
+            <Homepage />
+          )
+        }
+      />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<PatientRegister />} />
       <Route path="/patient/login" element={
@@ -46,6 +58,7 @@ export default function AppRoutes() {
           <Route path="treatments" element={<Treatments />} />
           <Route path="billing" element={<Billing />} />
           <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="doctor-profile" element={<DoctorProfile />} />
         </Route>
       ) : null}
       
@@ -61,10 +74,16 @@ export default function AppRoutes() {
         <Route path="/patient/*" element={<Navigate to="/patient/login" replace />} />
       )}
       
-      {/* Default Redirects */}
-      <Route path="/admin" element={
-        token ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />
-      } />
+      {/* Top-level helpers to avoid accidental fallbacks */}
+      {!token && (
+        <>
+          <Route path="/patients" element={<Navigate to="/login" replace />} />
+          <Route path="/appointments" element={<Navigate to="/login" replace />} />
+          <Route path="/treatments" element={<Navigate to="/login" replace />} />
+          <Route path="/billing" element={<Navigate to="/login" replace />} />
+          <Route path="/audit-logs" element={<Navigate to="/login" replace />} />
+        </>
+      )}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

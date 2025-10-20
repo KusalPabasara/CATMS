@@ -6,7 +6,6 @@ import {
   Button, 
   Card, 
   CardContent, 
-  Grid, 
   Container,
   Avatar,
   Chip,
@@ -202,6 +201,7 @@ const TestimonialCard = ({ text, author, role, rating = 5 }) => {
 const Homepage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [dept, setDept] = React.useState('general');
 
   const services = [
     {
@@ -232,28 +232,28 @@ const Homepage = () => {
 
   const doctors = [
     {
-      name: "Dr. Sarah Johnson",
+      name: "Dr. Nadeesha Perera",
       specialty: "Cardiologist",
       experience: "15",
-      avatar: null
+      avatar: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?q=80&w=640&auto=format&fit=crop&crop=faces&ixlib=rb-4.0.3&sat=10&exp=5'
     },
     {
-      name: "Dr. Michael Chen",
+      name: "Dr. Chamath Fernando",
       specialty: "Neurologist", 
       experience: "12",
-      avatar: null
+      avatar: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?q=80&w=640&auto=format&fit=crop&crop=faces&ixlib=rb-4.0.3&sat=10&exp=5'
     },
     {
-      name: "Dr. Emily Rodriguez",
+      name: "Dr. Ishara Weerasinghe",
       specialty: "Pediatrician",
       experience: "10",
-      avatar: null
+      avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=640&auto=format&fit=crop&crop=faces&ixlib=rb-4.0.3&sat=10&exp=5'
     },
     {
-      name: "Dr. David Kumar",
+      name: "Dr. Dinesh Jayakody",
       specialty: "General Surgeon",
       experience: "18",
-      avatar: null
+      avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=640&auto=format&fit=crop&crop=faces&ixlib=rb-4.0.3&sat=10&exp=5'
     }
   ];
 
@@ -340,8 +340,8 @@ const Homepage = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center' }}>
+            <Box>
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -413,8 +413,8 @@ const Homepage = () => {
                   </Button>
                 </Box>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                  <Box>
                     <Paper 
                       sx={{ 
                         p: 2, 
@@ -430,8 +430,8 @@ const Homepage = () => {
                         Mon — Sat · 8am — 8pm
                       </Typography>
                     </Paper>
-                  </Grid>
-                  <Grid item xs={6}>
+                  </Box>
+                  <Box>
                     <Paper 
                       sx={{ 
                         p: 2, 
@@ -447,12 +447,12 @@ const Homepage = () => {
                         Call 123-456-789
                       </Typography>
                     </Paper>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </motion.div>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} md={6}>
+            <Box>
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -503,6 +503,8 @@ const Homepage = () => {
                         <InputLabel>Choose Department</InputLabel>
                         <Select
                           label="Choose Department"
+                          value={dept}
+                          onChange={(e) => setDept(e.target.value)}
                           sx={{ borderRadius: 2 }}
                         >
                           <MenuItem value="general">General Practice</MenuItem>
@@ -543,8 +545,8 @@ const Homepage = () => {
                   </CardContent>
                 </Card>
               </motion.div>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
@@ -560,9 +562,9 @@ const Homepage = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 4 }}>
             {services.map((service, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
+              <Box key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -571,9 +573,9 @@ const Homepage = () => {
                 >
                   <ServiceCard {...service} />
                 </motion.div>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
@@ -586,8 +588,8 @@ const Homepage = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center' }}>
+            <Box>
               <Box sx={{ mb: 4 }}>
                 <Chip 
                   label="Why Marga.lk" 
@@ -634,12 +636,12 @@ const Homepage = () => {
                   <Chip icon={<Assessment />} label="Advanced Analytics" color="info" />
                 </Box>
               </Box>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
-              <Grid container spacing={2}>
+            <Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
                 {['Surgery', 'Gastroenterology', 'Pulmonology', 'Dermatology', 'Otolaryngology', 'Respiratory'].map((specialty, index) => (
-                  <Grid item xs={6} key={index}>
+                  <Box key={index}>
                     <Card 
                       sx={{ 
                         p: 2, 
@@ -657,11 +659,11 @@ const Homepage = () => {
                         {specialty}
                       </Typography>
                     </Card>
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
-            </Grid>
-          </Grid>
+              </Box>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
@@ -677,9 +679,9 @@ const Homepage = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 4 }}>
             {doctors.map((doctor, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
+              <Box key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -688,9 +690,9 @@ const Homepage = () => {
                 >
                   <DoctorCard {...doctor} />
                 </motion.div>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
@@ -711,9 +713,9 @@ const Homepage = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3,1fr)' }, gap: 4 }}>
             {testimonials.map((testimonial, index) => (
-              <Grid item xs={12} md={4} key={index}>
+              <Box key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -722,9 +724,9 @@ const Homepage = () => {
                 >
                   <TestimonialCard {...testimonial} />
                 </motion.div>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
@@ -779,8 +781,8 @@ const Homepage = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3,1fr)' }, gap: 4 }}>
+            <Box>
               <Box sx={{ mb: 2 }}>
                 <MargaLogo size="small" variant="horizontal" />
               </Box>
@@ -799,9 +801,9 @@ const Homepage = () => {
                   <LocationOn />
                 </IconButton>
               </Box>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} md={4}>
+            <Box>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Contact
               </Typography>
@@ -814,9 +816,9 @@ const Homepage = () => {
               <Typography variant="body2" color="text.secondary">
                 +94 1234 567
               </Typography>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} md={4}>
+            <Box>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Company
               </Typography>
@@ -834,8 +836,8 @@ const Homepage = () => {
                   FAQ
                 </Button>
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
           
           <Box sx={{ mt: 4, pt: 4, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>

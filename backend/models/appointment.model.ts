@@ -7,10 +7,13 @@ interface AppointmentAttributes {
   doctor_id: number | null;
   branch_id: number | null;
   appointment_date: Date | null;
-  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
   is_walkin: boolean | null;
   reason: string | null;
   created_by: number | null;
+  approved_by: number | null;
+  approved_at: Date | null;
+  rejection_reason: string | null;
   created_at: Date | null;
 }
 
@@ -22,10 +25,13 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
   public doctor_id!: number | null;
   public branch_id!: number | null;
   public appointment_date!: Date | null;
-  public status!: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
+  public status!: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
   public is_walkin!: boolean | null;
   public reason!: string | null;
   public created_by!: number | null;
+  public approved_by!: number | null;
+  public approved_at!: Date | null;
+  public rejection_reason!: string | null;
   public created_at!: Date | null;
 
   // Timestamps
@@ -56,7 +62,7 @@ Appointment.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled', 'No-Show'),
+      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Scheduled', 'Completed', 'Cancelled', 'No-Show'),
       allowNull: true,
     },
     is_walkin: {
@@ -69,6 +75,18 @@ Appointment.init(
     },
     created_by: {
       type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    approved_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    approved_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    rejection_reason: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     created_at: {

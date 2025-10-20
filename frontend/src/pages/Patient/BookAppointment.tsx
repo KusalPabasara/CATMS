@@ -141,8 +141,9 @@ export default function BookAppointment() {
         appointment_date: `${formData.appointment_date}T${formData.appointment_time}:00`,
       };
 
-      await api.post('/api/patient-auth/appointments', appointmentData);
-      setSuccess('Appointment booked successfully!');
+      // Use the new patient endpoint; backend enforces Pending status
+      await api.post('/api/appointments/patient', appointmentData);
+      setSuccess('Appointment request submitted. You will be notified after approval.');
       
       // Reset form
       setFormData({
