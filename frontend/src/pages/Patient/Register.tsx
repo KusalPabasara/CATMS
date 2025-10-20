@@ -17,6 +17,7 @@ import {
   InputLabel,
   Select,
   Divider,
+  useTheme,
 } from '@mui/material';
 import {
   Visibility,
@@ -32,6 +33,7 @@ import {
 } from '@mui/icons-material';
 import MargaLogo from '../../components/MargaLogo';
 export default function PatientRegister() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

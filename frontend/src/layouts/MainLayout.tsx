@@ -62,7 +62,8 @@ export default function MainLayout() {
     { name: 'Treatments', href: '/admin/treatments', icon: <MedicalIcon /> },
     { name: 'Billing', href: '/admin/billing', icon: <PaymentIcon /> },
     { name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> },
-    { name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> },
+    // AI Medical Assistant only for doctors
+    ...(user?.role === 'Doctor' ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
