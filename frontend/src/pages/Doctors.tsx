@@ -27,8 +27,6 @@ import {
   CircularProgress,
   Tooltip,
   Avatar,
-  Divider,
-  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,14 +36,12 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  LocalHospital as HospitalIcon,
   Key as KeyIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import api from '../../services/api';
-import { formatLKR } from '../../utils/currency';
+import api from '../services/api';
 
 interface Doctor {
   user_id: number;
@@ -69,7 +65,7 @@ interface Branch {
   name: string;
 }
 
-const DoctorManagement: React.FC = () => {
+const Doctors: React.FC = () => {
   const theme = useTheme();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -438,81 +434,69 @@ const DoctorManagement: React.FC = () => {
         <DialogTitle>Add New Doctor</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Speciality"
-                  value={formData.speciality}
-                  onChange={(e) => setFormData({ ...formData, speciality: e.target.value })}
-                  placeholder="e.g., Cardiology, Neurology"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Branch</InputLabel>
-                  <Select
-                    value={formData.branch_id}
-                    onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                    label="Branch"
-                  >
-                    <MenuItem value="">Main Branch</MenuItem>
-                    {branches.map((branch) => (
-                      <MenuItem key={branch.branch_id} value={branch.branch_id.toString()}>
-                        {branch.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                label="Speciality"
+                value={formData.speciality}
+                onChange={(e) => setFormData({ ...formData, speciality: e.target.value })}
+                placeholder="e.g., Cardiology, Neurology"
+              />
+              <FormControl fullWidth>
+                <InputLabel>Branch</InputLabel>
+                <Select
+                  value={formData.branch_id}
+                  onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                  label="Branch"
+                >
+                  <MenuItem value="">Main Branch</MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch.branch_id} value={branch.branch_id.toString()}>
+                      {branch.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -532,79 +516,67 @@ const DoctorManagement: React.FC = () => {
         <DialogTitle>Edit Doctor</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={editFormData.full_name}
-                  onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Phone"
-                  value={editFormData.phone}
-                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Speciality"
-                  value={editFormData.speciality}
-                  onChange={(e) => setEditFormData({ ...editFormData, speciality: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Branch</InputLabel>
-                  <Select
-                    value={editFormData.branch_id}
-                    onChange={(e) => setEditFormData({ ...editFormData, branch_id: e.target.value })}
-                    label="Branch"
-                  >
-                    <MenuItem value="">Main Branch</MenuItem>
-                    {branches.map((branch) => (
-                      <MenuItem key={branch.branch_id} value={branch.branch_id.toString()}>
-                        {branch.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="New Password (optional)"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={editFormData.password}
-                  onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        edge="end"
-                      >
-                        {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={editFormData.full_name}
+                onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                label="Speciality"
+                value={editFormData.speciality}
+                onChange={(e) => setEditFormData({ ...editFormData, speciality: e.target.value })}
+              />
+              <FormControl fullWidth>
+                <InputLabel>Branch</InputLabel>
+                <Select
+                  value={editFormData.branch_id}
+                  onChange={(e) => setEditFormData({ ...editFormData, branch_id: e.target.value })}
+                  label="Branch"
+                >
+                  <MenuItem value="">Main Branch</MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch.branch_id} value={branch.branch_id.toString()}>
+                      {branch.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                label="New Password (optional)"
+                type={showNewPassword ? 'text' : 'password'}
+                value={editFormData.password}
+                onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      edge="end"
+                    >
+                      {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -627,48 +599,44 @@ const DoctorManagement: React.FC = () => {
             <Typography variant="body2" color="text.secondary" mb={2}>
               Reset password for: <strong>{selectedDoctor?.full_name}</strong>
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="New Password"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={passwordData.new_password}
-                  onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                  required
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        edge="end"
-                      >
-                        {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Confirm Password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={passwordData.confirm_password}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                  required
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    ),
-                  }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="New Password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={passwordData.new_password}
+                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      edge="end"
+                    >
+                      {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={passwordData.confirm_password}
+                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -686,4 +654,4 @@ const DoctorManagement: React.FC = () => {
   );
 };
 
-export default DoctorManagement;
+export default Doctors;
