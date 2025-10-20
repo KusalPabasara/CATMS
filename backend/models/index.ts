@@ -22,10 +22,10 @@ Staff.hasMany(Appointment, { foreignKey: 'doctor_id', as: 'Appointments' })
 Branch.hasMany(Appointment, { foreignKey: 'branch_id', as: 'Appointments' })
 
 Treatment.belongsTo(Appointment, { foreignKey: 'appointment_id', as: 'Appointment' })
-Treatment.belongsTo(TreatmentCatalogue, { foreignKey: 'treatment_type_id', as: 'TreatmentCatalogue' })
+Treatment.belongsTo(TreatmentCatalogue, { foreignKey: 'treatment_id', as: 'TreatmentCatalogue' })
 
 Appointment.hasMany(Treatment, { foreignKey: 'appointment_id', as: 'Treatments' })
-TreatmentCatalogue.hasMany(Treatment, { foreignKey: 'treatment_type_id', as: 'Treatments' })
+TreatmentCatalogue.hasMany(Treatment, { foreignKey: 'treatment_id', as: 'Treatments' })
 
 Invoice.belongsTo(Patient, { foreignKey: 'patient_id', as: 'Patient' })
 Invoice.belongsTo(Appointment, { foreignKey: 'appointment_id', as: 'Appointment' })

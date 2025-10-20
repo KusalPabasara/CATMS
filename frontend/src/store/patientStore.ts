@@ -48,7 +48,7 @@ export const usePatientStore = create<PatientState>()(
         // Fetch profile picture from the profile service
         try {
           console.log('🔐 Login: Fetching profile picture from profile service...');
-          const profileResponse = await fetch(`http://localhost:5001/api/patient-auth/test-profile`, {
+          const profileResponse = await fetch(`http://localhost:5000/api/patient-auth/test-profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ export const usePatientStore = create<PatientState>()(
               // Update patient with profile picture
               const updatedPatient = {
                 ...patient,
-                profile_picture: `http://localhost:5001${profileData.profile.profile_picture}`
+                profile_picture: `http://localhost:5000${profileData.profile.profile_picture}`
               };
               
               console.log('🔐 Login: Updated patient with profile picture:', updatedPatient);

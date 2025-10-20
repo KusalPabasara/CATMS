@@ -3,7 +3,11 @@ import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+// Import index to ensure associations are loaded
+import '../models/index';
 import Patient from '../models/patient.model';
+import Appointment from '../models/appointment.model';
+import Staff from '../models/staff.model';
 import { generateToken } from '../utils/jwt.util';
 import { sendEmail, emailTemplates } from '../services/email.service';
 import { sendSMS, smsTemplates } from '../services/sms.service';
@@ -208,7 +212,7 @@ export const patientRegister = async (req: Request, res: Response) => {
 // Update Patient Profile (by patient themselves)
 export const updatePatientProfile = async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patient?.patient_id;
+    const patientId = (req as any).user?.patient_id;
     
     if (!patientId) {
       return res.status(401).json({ error: 'Patient authentication required' });
@@ -252,7 +256,7 @@ export const changePatientPassword = async (req: Request, res: Response) => {
   const { current_password, new_password } = req.body;
 
   try {
-    const patientId = (req as any).patient?.patient_id;
+    const patientId = (req as any).user?.patient_id;
     
     if (!patientId) {
       return res.status(401).json({ error: 'Patient authentication required' });
@@ -302,7 +306,7 @@ export const changePatientPassword = async (req: Request, res: Response) => {
 // Get Patient's Own Profile
 export const getPatientProfile = async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patient?.patient_id;
+    const patientId = (req as any).user?.patient_id;
     
     if (!patientId) {
       return res.status(401).json({ error: 'Patient authentication required' });
@@ -327,25 +331,14 @@ export const getPatientProfile = async (req: Request, res: Response) => {
 // Get Patient's Appointments
 export const getPatientAppointments = async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patient?.patient_id;
+    const patientId = (req as any).user?.patient_id;
     
     if (!patientId) {
       return res.status(401).json({ error: 'Patient authentication required' });
     }
 
-    // Import here to avoid circular dependencies
-    const Appointment = require('../models/appointment.model').default;
-    const User = require('../models/user.model').default;
-
     const appointments = await Appointment.findAll({
       where: { patient_id: patientId },
-      include: [
-        {
-          model: User,
-          as: 'Doctor',
-          attributes: ['full_name', 'email']
-        }
-      ],
       order: [['appointment_date', 'DESC']]
     });
 
@@ -359,7 +352,7 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
 // Create Patient Appointment
 export const createPatientAppointment = async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patient?.patient_id;
+    const patientId = (req as any).user?.patient_id;
     
     if (!patientId) {
       return res.status(401).json({ error: 'Patient authentication required' });
@@ -481,9 +474,9 @@ export const getPatientTreatments = async (req: Request, res: Response) => {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     console.log('📸 Multer: Setting destination for file:', file.originalname);
-    const uploadDir = path.join(__dirname, '../../uploads/profile-pictures');
+    const uploadDir = path.resolve(__dirname, '../uploads/profile-pictures');
     console.log('📸 Multer: Upload directory:', uploadDir);
-    
+
     if (!fs.existsSync(uploadDir)) {
       console.log('📸 Multer: Creating upload directory');
       fs.mkdirSync(uploadDir, { recursive: true });

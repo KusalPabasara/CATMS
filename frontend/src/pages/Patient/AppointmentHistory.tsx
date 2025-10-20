@@ -596,7 +596,7 @@ function AppointmentTable({
                 </TableCell>
                 <TableCell>
                   <Chip
-                    icon={getStatusIcon(appointment.status)}
+                    icon={getStatusIcon(appointment.status) as React.ReactElement}
                     label={appointment.status}
                     color={getStatusColor(appointment.status) as any}
                     size="small"

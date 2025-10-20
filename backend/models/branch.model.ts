@@ -50,7 +50,7 @@ Branch.init(
   },
   {
     sequelize,
-    tableName: 'branch',
+    tableName: 'branches',
     timestamps: false,
     freezeTableName: true,
   }

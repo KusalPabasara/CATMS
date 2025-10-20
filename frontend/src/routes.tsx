@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
@@ -25,7 +26,9 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<Homepage />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<PatientRegister />} />
       <Route path="/patient/login" element={
         patientAuthenticated ? <Navigate to="/patient/dashboard" replace /> : <PatientLogin />
       } />
@@ -35,7 +38,7 @@ export default function AppRoutes() {
       
       {/* Protected Staff/Admin Routes */}
       {token ? (
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/admin" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<Patients />} />
           <Route path="appointments" element={<Appointments />} />
@@ -59,10 +62,8 @@ export default function AppRoutes() {
       )}
       
       {/* Default Redirects */}
-      <Route path="/" element={
-        token ? <Navigate to="/" replace /> : 
-        patientAuthenticated ? <Navigate to="/patient/dashboard" replace /> :
-        <Navigate to="/login" replace />
+      <Route path="/admin" element={
+        token ? <Navigate to="/admin" replace /> : <Navigate to="/login" replace />
       } />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

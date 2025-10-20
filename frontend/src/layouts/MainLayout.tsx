@@ -2,6 +2,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
 import ThemeToggle from '../components/ThemeToggle';
+import MargaLogo from '../components/MargaLogo';
 import {
   AppBar,
   Box,
@@ -67,14 +68,7 @@ export default function MainLayout() {
   const drawer = (
     <Box>
       <Toolbar>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
-            <HospitalIcon />
-          </Avatar>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
-            CATMS
-          </Typography>
-        </Box>
+        <MargaLogo size="small" variant="horizontal" />
       </Toolbar>
       <Divider />
       
@@ -168,7 +162,7 @@ export default function MainLayout() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            CATMS
+            Marga.lk
           </Typography>
           <ThemeToggle />
         </Toolbar>

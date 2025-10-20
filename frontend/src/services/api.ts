@@ -4,7 +4,7 @@ axios.defaults.baseURL = 'http://localhost:5000'; // Your backend URL
 
 // Create a separate axios instance for profile picture uploads
 const profileUploadApi = axios.create({
-  baseURL: 'http://localhost:5001', // Profile picture upload service
+  baseURL: 'http://localhost:5000', // Profile picture upload service
   withCredentials: true
 });
 axios.defaults.withCredentials = true;

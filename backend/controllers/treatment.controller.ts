@@ -4,8 +4,7 @@ import Treatment from "../models/treatment.model";
 export const getAllTreatments = async (_req: Request, res: Response) => {
   try {
     const treatments = await Treatment.findAll({
-      where: { is_active: true },
-      order: [['name', 'ASC']]
+      order: [['created_at', 'DESC']]
     });
     res.json(treatments);
   } catch (err) {
@@ -49,9 +48,9 @@ export const deleteTreatment = async (req: Request, res: Response) => {
     const treatment = await Treatment.findByPk(req.params.id);
     if (!treatment) return res.status(404).json({ error: "Treatment not found" });
     
-    await treatment.update({ is_active: false });
-    res.json({ message: "Treatment deactivated successfully." });
+    await treatment.destroy();
+    res.json({ message: "Treatment deleted successfully." });
   } catch (err) {
-    res.status(500).json({ error: "Deactivation failed", details: err });
+    res.status(500).json({ error: "Deletion failed", details: err });
   }
 };

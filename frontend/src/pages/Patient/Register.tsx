@@ -30,6 +30,7 @@ import {
   Badge as BadgeIcon,
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
+import MargaLogo from '../../components/MargaLogo';
 export default function PatientRegister() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -152,22 +153,14 @@ export default function PatientRegister() {
       }}>
         <CardContent sx={{ p: 4 }}>
           <Box display="flex" alignItems="center" justifyContent="center" mb={4}>
-            <HospitalIcon sx={{ fontSize: 48, mr: 2, color: 'primary.main' }} />
-            <Box>
-              <Typography variant="h4" component="h1" fontWeight="bold" color="primary">
-                CATMS
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Patient Registration
-              </Typography>
-            </Box>
+            <MargaLogo size="large" variant="horizontal" />
           </Box>
 
           <Typography variant="h5" component="h2" textAlign="center" mb={1} fontWeight="bold">
             Create Your Account
           </Typography>
           <Typography variant="body2" textAlign="center" color="text.secondary" mb={4}>
-            Join CATMS to book appointments and manage your health records online
+            Join Marga.lk to book appointments and manage your health records online
           </Typography>
 
           {(error || success) && (

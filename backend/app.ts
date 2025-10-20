@@ -18,8 +18,31 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(morgan("dev"));
 
-// Serve static files for uploads
-app.use('/uploads', express.static('uploads'));
+// Serve static files for uploads with CORS headers
+app.use('/uploads', (req, res, next) => {
+  // Set CORS headers for all requests
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  // Set CORP header to allow cross-origin resource sharing
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+
+  next();
+}, express.static('uploads', {
+  setHeaders: (res, path) => {
+    // Additional headers for static files
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 // Import routes
 import authRoutes from './auth/auth.routes';
