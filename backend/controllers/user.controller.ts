@@ -1,17 +1,12 @@
 import { Request, Response } from "express";
 import User from "../models/user.model";
-import Role from "../models/role.model";
-import Branch from "../models/branch.model";
+import Staff from "../models/staff.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
 
 export const getAllUsers = async (_req: Request, res: Response) => {
   try {
     const users = await User.findAll({
       where: { is_active: true },
-      include: [
-        { model: Role, as: 'Role' },
-        { model: Branch, as: 'UserBranch' }
-      ],
       order: [['full_name', 'ASC']]
     });
     res.json(users);
@@ -28,16 +23,31 @@ export const getUsersByRole = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Role parameter is required" });
     }
 
+    // For doctor role, we need to get staff members who are doctors
+    if (role === 'doctor') {
+      const doctors = await Staff.findAll({
+        where: { 
+          role: 'Doctor',
+          is_active: true 
+        },
+        order: [['first_name', 'ASC']]
+      });
+      
+      // Map staff to user format for consistency
+      const mappedDoctors = doctors.map(doctor => ({
+        user_id: doctor.staff_id,
+        full_name: `${doctor.first_name} ${doctor.last_name}`,
+        email: doctor.email,
+        specialty: doctor.speciality,
+        role: 'Doctor'
+      }));
+      
+      return res.json(mappedDoctors);
+    }
+
+    // For other roles, use the User model
     const users = await User.findAll({
       where: { is_active: true },
-      include: [
-        { 
-          model: Role, 
-          as: 'Role',
-          where: { name: role }
-        },
-        { model: Branch, as: 'UserBranch' }
-      ],
       order: [['full_name', 'ASC']]
     });
     
@@ -49,12 +59,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const user = await User.findByPk(req.params.id, {
-      include: [
-        { model: Role, as: 'Role' },
-        { model: Branch, as: 'UserBranch' }
-      ]
-    });
+    const user = await User.findByPk(req.params.id);
     
     if (!user) {
       return res.status(404).json({ error: "User not found" });

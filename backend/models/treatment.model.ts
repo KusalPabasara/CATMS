@@ -2,40 +2,37 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
 interface TreatmentAttributes {
-  treatment_id: number;
+  record_id: number;
   appointment_id: number | null;
-  treatment_type_id: number | null;
-  consultation_notes: string | null;
+  doctor_id: number | null;
+  treatment_id: number | null;
+  notes: string | null;
   prescription: string | null;
-  treatment_date: Date | null;
-  cost: number | null;
-  doctor_signature: string | null;
-  is_active: boolean | null;
+  image_url: string | null;
+  digitally_signed: boolean | null;
   created_at: Date | null;
 }
 
-interface TreatmentCreationAttributes extends Optional<TreatmentAttributes, 'treatment_id' | 'created_at'> {}
+interface TreatmentCreationAttributes extends Optional<TreatmentAttributes, 'record_id' | 'created_at'> {}
 
 class Treatment extends Model<TreatmentAttributes, TreatmentCreationAttributes> implements TreatmentAttributes {
-  public treatment_id!: number;
+  public record_id!: number;
   public appointment_id!: number | null;
-  public treatment_type_id!: number | null;
-  public consultation_notes!: string | null;
+  public doctor_id!: number | null;
+  public treatment_id!: number | null;
+  public notes!: string | null;
   public prescription!: string | null;
-  public treatment_date!: Date | null;
-  public cost!: number | null;
-  public doctor_signature!: string | null;
-  public is_active!: boolean | null;
+  public image_url!: string | null;
+  public digitally_signed!: boolean | null;
   public created_at!: Date | null;
 
   // Timestamps
   public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
 }
 
 Treatment.init(
   {
-    treatment_id: {
+    record_id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
@@ -44,11 +41,15 @@ Treatment.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    treatment_type_id: {
+    doctor_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    consultation_notes: {
+    treatment_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    notes: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
@@ -56,23 +57,14 @@ Treatment.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    treatment_date: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: DataTypes.NOW,
-    },
-    cost: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: true,
-    },
-    doctor_signature: {
+    image_url: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    is_active: {
+    digitally_signed: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: true,
+      defaultValue: false,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -82,7 +74,7 @@ Treatment.init(
   },
   {
     sequelize,
-    tableName: 'treatment',
+    tableName: 'treatment_records',
     timestamps: false,
     freezeTableName: true,
   }

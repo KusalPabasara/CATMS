@@ -25,6 +25,7 @@ router.post('/register', patientRegister);
 router.use(authenticatePatient); // Apply middleware to all routes below
 
 router.get('/profile', getPatientProfile);
+router.get('/test-profile', getPatientProfile);
 router.put('/profile', updatePatientProfile);
 router.put('/change-password', changePatientPassword);
 router.post('/profile-picture', upload.single('profile_picture'), uploadProfilePicture);

@@ -5,10 +5,19 @@ import User from "../models/user.model";
 import Branch from "../models/branch.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
 
-export const getAllAppointments = async (_req: Request, res: Response) => {
+export const getAllAppointments = async (req: Request, res: Response) => {
   try {
+    const requesterRole = (req as any).user?.role as string | undefined;
+    const where: any = {};
+    if (requesterRole === 'Doctor') {
+      where.status = 'Approved';
+      where.doctor_id = (req as any).user?.user_id || undefined;
+    }
     const appointments = await Appointment.findAll({
-      order: [['appointment_date', 'ASC']]
+      where,
+      order: [[
+        'appointment_date', 'ASC'
+      ]]
     });
     res.json(appointments);
   } catch (err) {
@@ -33,7 +42,7 @@ import { isWorkingHour, hasConflictingAppointment } from "../utils/appointment.u
 
 export const createAppointment = async (req: Request, res: Response) => {
   try {
-    const { patient_id, doctor_id, branch_id, appointment_date, reason } = req.body;
+    const { patient_id, doctor_id, branch_id, appointment_date, reason, created_by_role } = req.body;
 
     // Validate required fields
     if (!patient_id || !doctor_id || !branch_id || !appointment_date) {
@@ -57,6 +66,10 @@ export const createAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Doctor is not available at this time" });
     }
 
+    // Status logic
+    const isStaffCreator = created_by_role && ['Receptionist', 'System Administrator', 'Branch Manager'].includes(created_by_role);
+    const initialStatus = isStaffCreator ? 'Approved' : 'Pending';
+
     // Create appointment
     const appointment = await Appointment.create({
       patient_id,
@@ -64,7 +77,10 @@ export const createAppointment = async (req: Request, res: Response) => {
       branch_id,
       appointment_date: appointmentTime,
       reason,
-      status: 'Scheduled'
+      status: initialStatus as any,
+      approved_by: isStaffCreator ? (req as any).user?.user_id || null : null,
+      approved_at: isStaffCreator ? new Date() : null,
+      created_by: (req as any).user?.user_id || null
     });
 
     // Fetch patient and doctor details for notifications
@@ -74,13 +90,13 @@ export const createAppointment = async (req: Request, res: Response) => {
       Branch.findByPk(branch_id)
     ]);
 
-    // Send confirmation email
-    if (patient?.email) {
+    // Send confirmation email based on status
+    if (patient?.email && initialStatus === 'Approved') {
       const emailTemplate = (emailTemplates as any).appointmentConfirmation(
         patient.getDataValue('full_name'),
         appointmentTime,
         doctor?.getDataValue('full_name') || 'your doctor',
-        branch?.getDataValue('branch_name') || 'our clinic',
+        branch?.getDataValue('name') || 'our clinic',
         reason || 'consultation'
       );
       await sendEmail(
@@ -89,21 +105,24 @@ export const createAppointment = async (req: Request, res: Response) => {
         emailTemplate.html
       );
     }
+    // For Pending requests, skip email unless a template exists in the future
 
     // Send SMS confirmation
-    if (patient?.phone) {
+    if (patient?.phone && initialStatus === 'Approved') {
       const smsText = smsTemplates.appointmentConfirmation(
         patient.getDataValue('full_name'),
         appointmentTime.toISOString(),
         doctor?.getDataValue('full_name') || 'your doctor',
-        branch?.getDataValue('branch_name') || 'our clinic',
+        branch?.getDataValue('name') || 'our clinic',
         reason || 'consultation'
       );
       await sendSMS(patient.getDataValue('phone'), smsText);
     }
 
-    // Schedule reminder
-    await scheduleReminder(appointment.getDataValue('appointment_id'));
+    // Schedule reminder only when approved
+    if (initialStatus === 'Approved') {
+      await scheduleReminder(appointment.getDataValue('appointment_id'));
+    }
     
     // Log audit trail
     await logAuditWithRequest(
@@ -116,11 +135,150 @@ export const createAppointment = async (req: Request, res: Response) => {
     
     res.status(201).json({
       appointment,
-      message: 'Appointment created successfully. Confirmation sent to patient.'
+      message: initialStatus === 'Approved'
+        ? 'Appointment created and approved.'
+        : 'Appointment request submitted and awaiting approval.'
     });
   } catch (err) {
     console.error('Failed to create appointment:', err);
     res.status(400).json({ error: "Failed to create appointment", details: err });
+  }
+};
+
+// Patient self-service booking: always creates a Pending request tied to the authenticated patient
+export const createAppointmentAsPatient = async (req: Request, res: Response) => {
+  try {
+    const patientId = (req as any).user?.patient_id;
+    if (!patientId) {
+      return res.status(401).json({ error: "Unauthorized: no patient in token" });
+    }
+
+    const { doctor_id, branch_id, appointment_date, reason } = req.body;
+    if (!doctor_id || !appointment_date) {
+      return res.status(400).json({ error: "Missing required fields: doctor_id and appointment_date are required" });
+    }
+
+    const appointmentTime = new Date(appointment_date);
+    if (appointmentTime < new Date()) {
+      return res.status(400).json({ error: "Appointment date must be in the future" });
+    }
+    if (!isWorkingHour(appointmentTime)) {
+      return res.status(400).json({ error: "Appointment must be during working hours" });
+    }
+    const conflict = await hasConflictingAppointment(doctor_id, appointmentTime);
+    if (conflict) {
+      return res.status(400).json({ error: "Doctor is not available at this time" });
+    }
+
+    const appointment = await Appointment.create({
+      patient_id: patientId,
+      doctor_id,
+      branch_id: branch_id || null,
+      appointment_date: appointmentTime,
+      reason,
+      status: 'Pending' as any,
+      created_by: (req as any).user?.user_id || null
+    });
+
+    // Audit
+    await logAuditWithRequest(
+      req,
+      auditActions.APPOINTMENT_CREATED,
+      'appointments',
+      appointment.getDataValue('appointment_id'),
+      `Patient created appointment request with doctor ${doctor_id}`
+    );
+
+    return res.status(201).json({
+      appointment,
+      message: 'Appointment request submitted and awaiting approval.'
+    });
+  } catch (err) {
+    console.error('Failed to create patient appointment:', err);
+    return res.status(400).json({ error: "Failed to create appointment", details: err });
+  }
+};
+
+export const approveAppointment = async (req: Request, res: Response) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    await appointment.update({
+      status: 'Approved' as any,
+      approved_by: (req as any).user?.user_id || null,
+      approved_at: new Date(),
+      rejection_reason: null
+    });
+
+    // Audit
+    await logAuditWithRequest(
+      req,
+      auditActions.APPOINTMENT_UPDATED,
+      'appointments',
+      (appointment as any).appointment_id,
+      `Approved appointment ID: ${(appointment as any).appointment_id}`
+    );
+
+    // Notify patient on approval (best-effort)
+    try {
+      const patient = await Patient.findByPk(appointment.getDataValue('patient_id'));
+      const doctor = await User.findByPk(appointment.getDataValue('doctor_id'));
+      const branch = await Branch.findByPk(appointment.getDataValue('branch_id'));
+      const when = appointment.getDataValue('appointment_date');
+      if (patient?.email) {
+        const emailTemplate = (emailTemplates as any).appointmentConfirmation(
+          patient.getDataValue('full_name'),
+          when,
+          doctor?.getDataValue('full_name') || 'your doctor',
+          branch?.getDataValue('name') || 'our clinic',
+          appointment.getDataValue('reason') || 'consultation'
+        );
+        await sendEmail(patient.getDataValue('email'), emailTemplate.subject, emailTemplate.html);
+      }
+      if (patient?.phone) {
+        const smsText = smsTemplates.appointmentConfirmation(
+          patient.getDataValue('full_name'),
+          (when as Date).toISOString(),
+          doctor?.getDataValue('full_name') || 'your doctor',
+          branch?.getDataValue('name') || 'our clinic',
+          appointment.getDataValue('reason') || 'consultation'
+        );
+        await sendSMS(patient.getDataValue('phone'), smsText);
+      }
+    } catch {}
+
+    res.json({ message: 'Appointment approved', appointment });
+  } catch (err) {
+    res.status(400).json({ error: 'Approval failed', details: err });
+  }
+};
+
+export const rejectAppointment = async (req: Request, res: Response) => {
+  try {
+    const { reason } = req.body;
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    await appointment.update({
+      status: 'Rejected' as any,
+      approved_by: null,
+      approved_at: null,
+      rejection_reason: reason || 'Not specified'
+    });
+
+    // Audit
+    await logAuditWithRequest(
+      req,
+      auditActions.APPOINTMENT_UPDATED,
+      'appointments',
+      (appointment as any).appointment_id,
+      `Rejected appointment ID: ${(appointment as any).appointment_id}`
+    );
+
+    res.json({ message: 'Appointment rejected', appointment });
+  } catch (err) {
+    res.status(400).json({ error: 'Rejection failed', details: err });
   }
 };
 
@@ -139,7 +297,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
     }
 
     const oldStatus = appointment.getDataValue('status');
-    const newStatus = req.body.status;
+    const newStatus = req.body.status as string | undefined;
 
     // If rescheduling, validate new time
     if (req.body.appointment_date) {
@@ -197,6 +355,16 @@ export const updateAppointment = async (req: Request, res: Response) => {
       }
     }
     
+    // Handle approval transitions
+    if (newStatus === 'Approved') {
+      (otherUpdates as any).approved_by = (req as any).user?.user_id || null;
+      (otherUpdates as any).approved_at = new Date();
+    }
+    if (newStatus === 'Rejected') {
+      (otherUpdates as any).approved_by = null;
+      (otherUpdates as any).approved_at = null;
+    }
+
     // Update the appointment
     await appointment.update({ appointment_date, ...otherUpdates });
     

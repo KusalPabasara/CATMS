@@ -1,340 +1,506 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Typography,
+  Button,
+  IconButton,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
   Table,
-  TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
   Paper,
-  Alert,
   Chip,
+  Alert,
+  CircularProgress,
   Tooltip,
-  Fab,
-  useTheme,
-  alpha,
-  Skeleton,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
+  LocalHospital as TreatmentIcon,
   Add as AddIcon,
-  MedicalServices as MedicalIcon,
-  AccessTime as TimeIcon,
-  AttachMoney as MoneyIcon,
-  Category as CategoryIcon,
-  Description as DescriptionIcon,
+  SmartToy as BotIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import api from '../services/api';
-import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
 
-interface Treatment {
-  treatment_id: number;
-  name: string;
-  description: string;
-  duration: number | null;
-  cost: number;
-  category: string | null;
+type Catalogue = {
+  treatment_type_id: number;
+  treatment_name: string | null;
+  description: string | null;
   icd10_code: string | null;
   cpt_code: string | null;
-  is_active: boolean;
-}
+  standard_cost: number | null;
+  category: string | null;
+  is_active: boolean | null;
+};
 
 export default function Treatments() {
-  const theme = useTheme();
-  const { isDark } = useCustomTheme();
-  const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const [rows, setRows] = useState<Catalogue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [openAdd, setOpenAdd] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [selected, setSelected] = useState<Catalogue | null>(null);
+
+  const [form, setForm] = useState({
+    treatment_name: '',
+    description: '',
+    icd10_code: '',
+    cpt_code: '',
+    standard_cost: '',
+    category: '',
+    is_active: 'true', // as string for Select
+  });
+
+  const hasData = useMemo(() => rows.length > 0, [rows]);
 
   useEffect(() => {
-    const fetchTreatments = async () => {
-      try {
-        const response = await api.get('/api/treatments');
-        setTreatments(response.data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to fetch treatments');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTreatments();
+    fetchRows();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const fetchRows = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await api.get('/api/treatment-catalogue');
+      setRows(res.data || []);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Failed to load treatments catalogue');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getCategoryColor = (category: string | null) => {
-    if (!category) return 'default';
-    const categoryColors: { [key: string]: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' } = {
-      'General': 'primary',
-      'Surgery': 'error',
-      'Therapy': 'success',
-      'Diagnostic': 'info',
-      'Emergency': 'warning',
-      'Preventive': 'secondary',
+  const resetForm = () => {
+    setForm({
+      treatment_name: '',
+      description: '',
+      icd10_code: '',
+      cpt_code: '',
+      standard_cost: '',
+      category: '',
+      is_active: 'true',
+    });
+  };
+
+  const openAddDialog = () => {
+    resetForm();
+    setOpenAdd(true);
+  };
+
+  const openEditDialog = (row: Catalogue) => {
+    setSelected(row);
+    setForm({
+      treatment_name: row.treatment_name || '',
+      description: row.description || '',
+      icd10_code: row.icd10_code || '',
+      cpt_code: row.cpt_code || '',
+      standard_cost: row.standard_cost != null ? String(row.standard_cost) : '',
+      category: row.category || '',
+      is_active: String(row.is_active ?? true),
+    });
+    setOpenEdit(true);
+  };
+
+  const toPayload = () => {
+    return {
+      treatment_name: form.treatment_name.trim(),
+      description: form.description.trim() || undefined,
+      icd10_code: form.icd10_code.trim() || undefined,
+      cpt_code: form.cpt_code.trim() || undefined,
+      standard_cost: form.standard_cost ? Number(form.standard_cost) : undefined,
+      category: form.category.trim() || undefined,
+      is_active: form.is_active === 'true',
     };
-    return categoryColors[category] || 'default';
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ mb: 3 }}>
-          <Skeleton variant="text" width={200} height={40} />
-        </Box>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[...Array(5)].map((_, index) => (
-                <Skeleton key={index} variant="rectangular" height={60} />
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-    );
-  }
+  const handleCreate = async () => {
+    try {
+      if (!form.treatment_name.trim()) {
+        setError('Treatment name is required');
+        return;
+      }
+      await api.post('/api/treatment-catalogue', toPayload());
+      setSuccess('Treatment type added successfully');
+      setOpenAdd(false);
+      await fetchRows();
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Failed to add treatment type');
+    }
+  };
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert 
-          severity="error" 
-          sx={{ 
-            borderRadius: 2,
-            backgroundColor: isDark ? alpha(theme.palette.error.main, 0.1) : undefined,
-            border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-          }}
-        >
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
+  const handleUpdate = async () => {
+    if (!selected) return;
+    try {
+      if (!form.treatment_name.trim()) {
+        setError('Treatment name is required');
+        return;
+      }
+      await api.put(`/api/treatment-catalogue/${selected.treatment_type_id}`, toPayload());
+      setSuccess('Treatment type updated successfully');
+      setOpenEdit(false);
+      setSelected(null);
+      await fetchRows();
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Failed to update treatment type');
+    }
+  };
+
+  const handleDelete = async (row: Catalogue) => {
+    if (!window.confirm(`Deactivate "${row.treatment_name}"?`)) return;
+    try {
+      await api.delete(`/api/treatment-catalogue/${row.treatment_type_id}`);
+      setSuccess('Treatment type deactivated');
+      await fetchRows();
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Failed to deactivate treatment type');
+    }
+  };
 
   return (
-    <Box sx={{ p: 3, minHeight: '100vh' }}>
-      {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <MedicalIcon 
-            sx={{ 
-              fontSize: 40, 
-              color: 'primary.main',
-              filter: isDark ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.3))' : undefined,
-            }} 
-          />
-          <Typography 
-            variant="h4" 
-            component="h1" 
-            sx={{ 
-              fontWeight: 700,
-              background: isDark 
-                ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Treatments
+    <Box>
+      {/* Header with actions row */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TreatmentIcon color="primary" />
+            <Typography variant="h4" fontWeight={700}>
+              Treatments
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Manage and view all available treatments (catalogue)
           </Typography>
         </Box>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          Manage and view all available medical treatments and procedures
-        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {/* Keep your bot icon in the header so it doesn't overlap your FAB */}
+          <Tooltip title="My Bot">
+            <span>
+              <IconButton color="primary" aria-label="assistant">
+                <BotIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openAddDialog}
+          >
+            Add Treatment
+          </Button>
+        </Box>
       </Box>
 
-      {/* Treatments Table */}
-      {treatments.length === 0 ? (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <CardContent>
-            <MedicalIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No treatments found
-            </Typography>
-            <Typography variant="body2" color="text.disabled">
-              No treatments are currently available in the system.
-            </Typography>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card sx={{ overflow: 'hidden' }}>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MedicalIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Treatment Name
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <DescriptionIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Description
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TimeIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Duration
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MoneyIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Cost
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CategoryIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Category
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {treatments.map((treatment) => (
-                  <TableRow 
-                    key={treatment.treatment_id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: isDark 
-                          ? alpha(theme.palette.primary.main, 0.08)
-                          : alpha(theme.palette.primary.main, 0.04),
-                        transform: 'scale(1.01)',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      },
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
-                  >
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600} color="text.primary">
-                        {treatment.name}
-                      </Typography>
-                      {treatment.icd10_code && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                          ICD-10: {treatment.icd10_code}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary"
-                        sx={{ 
-                          maxWidth: 300,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {treatment.description}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {treatment.duration ? (
-                        <Chip
-                          icon={<TimeIcon />}
-                          label={`${treatment.duration} min`}
-                          size="small"
-                          color="info"
-                          variant="outlined"
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.disabled">
-                          Not specified
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography 
-                        variant="subtitle2" 
-                        fontWeight={600}
-                        color="success.main"
-                        sx={{ 
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                        }}
-                      >
-                        <MoneyIcon fontSize="small" />
-                        {formatCurrency(treatment.cost)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {treatment.category ? (
-                        <Chip
-                          label={treatment.category}
-                          size="small"
-                          color={getCategoryColor(treatment.category)}
-                          variant="filled"
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.disabled">
-                          Uncategorized
-                        </Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>
+          {success}
+        </Alert>
       )}
 
-      {/* Floating Action Button */}
-      <Tooltip title="Add New Treatment" placement="left">
-        <Fab
-          color="primary"
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            background: isDark 
-              ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-              : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-            boxShadow: isDark 
-              ? '0 8px 32px rgba(59, 130, 246, 0.3), 0 4px 16px rgba(16, 185, 129, 0.2)'
-              : '0 8px 32px rgba(30, 64, 175, 0.3), 0 4px 16px rgba(5, 150, 105, 0.2)',
-            '&:hover': {
-              transform: 'scale(1.1)',
-              boxShadow: isDark 
-                ? '0 12px 40px rgba(59, 130, 246, 0.4), 0 6px 20px rgba(16, 185, 129, 0.3)'
-                : '0 12px 40px rgba(30, 64, 175, 0.4), 0 6px 20px rgba(5, 150, 105, 0.3)',
-            },
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={fetchRows}
         >
-          <AddIcon />
-        </Fab>
-      </Tooltip>
+          Refresh
+        </Button>
+      </Box>
+
+      <Card>
+        <CardContent>
+          {loading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240 }}>
+              <CircularProgress />
+            </Box>
+          ) : hasData ? (
+            <TableContainer component={Paper} elevation={0}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>ICD‑10</TableCell>
+                    <TableCell>CPT</TableCell>
+                    <TableCell align="right">Standard Cost</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((t) => (
+                    <TableRow key={t.treatment_type_id} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>{t.treatment_name}</TableCell>
+                      <TableCell sx={{ maxWidth: 360 }}>
+                        <Typography variant="body2" color="text.secondary" noWrap>
+                          {t.description || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{t.icd10_code || '—'}</TableCell>
+                      <TableCell>{t.cpt_code || '—'}</TableCell>
+                      <TableCell align="right">
+                        {t.standard_cost != null ? `Rs. ${Number(t.standard_cost).toFixed(2)}` : '—'}
+                      </TableCell>
+                      <TableCell>{t.category || '—'}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={t.is_active === false ? 'Inactive' : 'Active'}
+                          color={t.is_active === false ? 'default' : 'success'}
+                          size="small"
+                          variant={t.is_active === false ? 'outlined' : 'filled'}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'inline-flex', gap: 1 }}>
+                          <Tooltip title="Edit">
+                            <IconButton size="small" color="primary" onClick={() => openEditDialog(t)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Deactivate">
+                            <IconButton size="small" color="error" onClick={() => handleDelete(t)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box
+              sx={{
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  bgcolor: 'action.hover',
+                  mb: 2,
+                }}
+              >
+                <AddIcon color="action" />
+              </Box>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                No treatments found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                No treatments are currently available in the system.
+              </Typography>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openAddDialog}>
+                Add Treatment
+              </Button>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Dialog */}
+      <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Treatment Type</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Name"
+                fullWidth
+                value={form.treatment_name}
+                onChange={(e) => setForm((f) => ({ ...f, treatment_name: e.target.value }))}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                minRows={3}
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="ICD‑10 Code"
+                fullWidth
+                value={form.icd10_code}
+                onChange={(e) => setForm((f) => ({ ...f, icd10_code: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="CPT Code"
+                fullWidth
+                value={form.cpt_code}
+                onChange={(e) => setForm((f) => ({ ...f, cpt_code: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Standard Cost (LKR)"
+                type="number"
+                fullWidth
+                value={form.standard_cost}
+                onChange={(e) => setForm((f) => ({ ...f, standard_cost: e.target.value }))}
+                inputProps={{ min: 0, step: '0.01' }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Category"
+                fullWidth
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  label="Status"
+                  value={form.is_active}
+                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.value }))}
+                >
+                  <MenuItem value="true">Active</MenuItem>
+                  <MenuItem value="false">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAdd(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreate}>
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Treatment Type</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Name"
+                fullWidth
+                value={form.treatment_name}
+                onChange={(e) => setForm((f) => ({ ...f, treatment_name: e.target.value }))}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                minRows={3}
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="ICD‑10 Code"
+                fullWidth
+                value={form.icd10_code}
+                onChange={(e) => setForm((f) => ({ ...f, icd10_code: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="CPT Code"
+                fullWidth
+                value={form.cpt_code}
+                onChange={(e) => setForm((f) => ({ ...f, cpt_code: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Standard Cost (LKR)"
+                type="number"
+                fullWidth
+                value={form.standard_cost}
+                onChange={(e) => setForm((f) => ({ ...f, standard_cost: e.target.value }))}
+                inputProps={{ min: 0, step: '0.01' }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Category"
+                fullWidth
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  label="Status"
+                  value={form.is_active}
+                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.value }))}
+                >
+                  <MenuItem value="true">Active</MenuItem>
+                  <MenuItem value="false">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleUpdate}>
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
-
-

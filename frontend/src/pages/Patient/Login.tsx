@@ -49,6 +49,13 @@ export default function PatientLogin() {
     setLoading(true);
     setError('');
 
+    // Validate password
+    if (!formData.password || formData.password.trim().length === 0) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
     // Validate email format if using email login
     if (loginType === 'email' && (!formData.email || !formData.email.includes('@') || !formData.email.includes('.'))) {
       setError('Please enter a valid email address');
@@ -147,9 +154,11 @@ export default function PatientLogin() {
       sx={{
         background: isDark 
           ? 'linear-gradient(135deg, #0A0E1A 0%, #1E293B 50%, #0F172A 100%)'
-          : 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 50%, #1D4ED8 100%)',
+          : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f8fafc 100%)',
         position: 'relative',
         overflow: 'hidden',
+        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 3, md: 4 },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -157,11 +166,24 @@ export default function PatientLogin() {
           left: 0,
           right: 0,
           bottom: 0,
+          pointerEvents: 'none',
           background: isDark
             ? 'radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%)'
             : 'radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%)',
         },
-        p: 2,
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          backgroundImage: isDark
+            ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%233B82F6" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+            : 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23059669" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          opacity: 0.4,
+        },
       }}
     >
       <Slide direction="up" in={true} timeout={800}>
@@ -321,6 +343,12 @@ export default function PatientLogin() {
               onClick={() => {
                 console.log('🔐 Frontend: Switching to email login');
                 setLoginType('email');
+                setError(''); // Clear any existing errors
+                // Reset form data when switching to email
+                setFormData(prev => ({
+                  ...prev,
+                  national_id: '', // Clear national_id when switching to email
+                }));
               }}
               startIcon={<EmailIcon />}
               sx={{ 
@@ -347,6 +375,12 @@ export default function PatientLogin() {
               onClick={() => {
                 console.log('🔐 Frontend: Switching to national_id login');
                 setLoginType('national_id');
+                setError(''); // Clear any existing errors
+                // Reset form data when switching to national_id
+                setFormData(prev => ({
+                  ...prev,
+                  email: '', // Clear email when switching to national_id
+                }));
               }}
               startIcon={<PersonIcon />}
               sx={{ 
