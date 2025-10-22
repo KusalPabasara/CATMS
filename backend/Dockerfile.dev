@@ -5,20 +5,24 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
+# Install dependencies with better caching
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force
 
-# Copy source code (excluding files in .dockerignore)
+# Copy source code
 COPY . .
+
+# Install dev dependencies
+RUN npm ci --no-audit --no-fund
 
 # Expose port
 EXPOSE 5000
 
-# Create startup script
+# Create optimized startup script
 RUN echo '#!/bin/sh' > /app/start-dev.sh && \
     echo 'echo "🚀 Starting MedSync Backend in Development Mode..."' >> /app/start-dev.sh && \
     echo 'echo "⏳ Waiting for database to be ready..."' >> /app/start-dev.sh && \
-    echo 'sleep 10' >> /app/start-dev.sh && \
+    echo 'sleep 5' >> /app/start-dev.sh && \
     echo 'echo "🔄 Running database sync..."' >> /app/start-dev.sh && \
     echo 'npx ts-node ./utils/sync.ts' >> /app/start-dev.sh && \
     echo 'echo "🌱 Seeding initial data..."' >> /app/start-dev.sh && \
