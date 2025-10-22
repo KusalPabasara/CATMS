@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
+import api from "../services/api";
+import AdminBookingModal from '../components/AdminBookingModal';
 import {
   Box,
   Typography,
@@ -53,11 +55,17 @@ export default function Appointments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const { user } = useAuthStore();
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  const handleBookingSuccess = () => {
+    // Refresh appointments after successful booking
+    fetchAppointments();
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -71,7 +79,34 @@ export default function Appointments() {
     }
   };
 
-  const filteredAppointments = appointments.filter(appointment => {
+  const approveAppointment = async (id: number) => {
+    try {
+      await api.patch(`/api/appointments/${id}/approve`);
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to approve appointment');
+    }
+  };
+
+  const rejectAppointment = async (id: number) => {
+    try {
+      const reason = prompt('Enter rejection reason (optional):') || '';
+      await api.patch(`/api/appointments/${id}/reject`, { reason });
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to reject appointment');
+    }
+  };
+
+  const filteredAppointments = appointments
+    .filter(a => {
+      // If doctor, only show Approved appointments
+      if (user?.role === 'Doctor') {
+        return (a as any).status === 'Approved';
+      }
+      return true;
+    })
+    .filter(appointment => {
     if (filterStatus === 'all') return true;
     return appointment.status.toLowerCase() === filterStatus.toLowerCase();
   });
@@ -166,14 +201,13 @@ export default function Appointments() {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
+            onClick={() => setBookingModalOpen(true)}
             sx={{ mt: { xs: 2, sm: 0 } }}
           >
             Book Appointment
           </Button>
         )}
       </Box>
-
-      {/* Stats Overview */}
       <Box 
         display="grid" 
         gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
@@ -358,6 +392,16 @@ export default function Appointments() {
                           <CancelIcon />
                         </IconButton>
                       )}
+                      {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (appointment as any).status === 'Pending' && (
+                        <>
+                          <Button size="small" variant="contained" color="success" onClick={() => approveAppointment(appointment.appointment_id)}>
+                            Approve
+                          </Button>
+                          <Button size="small" variant="outlined" color="error" onClick={() => rejectAppointment(appointment.appointment_id)}>
+                            Reject
+                          </Button>
+                        </>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -378,6 +422,13 @@ export default function Appointments() {
           </Box>
         )}
       </Card>
+
+      {/* Admin Booking Modal */}
+      <AdminBookingModal
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        onSuccess={handleBookingSuccess}
+      />
     </Box>
   );
 }

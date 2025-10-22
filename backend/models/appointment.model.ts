@@ -7,14 +7,17 @@ interface AppointmentAttributes {
   doctor_id: number | null;
   branch_id: number | null;
   appointment_date: Date | null;
-  appointment_time: string | null;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
+  is_walkin: boolean | null;
   reason: string | null;
-  status: 'Scheduled' | 'Completed' | 'Cancelled' | null;
+  created_by: number | null;
+  approved_by: number | null;
+  approved_at: Date | null;
+  rejection_reason: string | null;
   created_at: Date | null;
-  updated_at: Date | null;
 }
 
-interface AppointmentCreationAttributes extends Optional<AppointmentAttributes, 'appointment_id' | 'created_at' | 'updated_at'> {}
+interface AppointmentCreationAttributes extends Optional<AppointmentAttributes, 'appointment_id' | 'created_at'> {}
 
 class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttributes> implements AppointmentAttributes {
   public appointment_id!: number;
@@ -22,15 +25,17 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
   public doctor_id!: number | null;
   public branch_id!: number | null;
   public appointment_date!: Date | null;
-  public appointment_time!: string | null;
+  public status!: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | null;
+  public is_walkin!: boolean | null;
   public reason!: string | null;
-  public status!: 'Scheduled' | 'Completed' | 'Cancelled' | null;
+  public created_by!: number | null;
+  public approved_by!: number | null;
+  public approved_at!: Date | null;
+  public rejection_reason!: string | null;
   public created_at!: Date | null;
-  public updated_at!: Date | null;
 
   // Timestamps
   public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
 }
 
 Appointment.init(
@@ -53,19 +58,35 @@ Appointment.init(
       allowNull: true,
     },
     appointment_date: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
       allowNull: true,
     },
-    appointment_time: {
-      type: DataTypes.TIME,
+    status: {
+      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Scheduled', 'Completed', 'Cancelled', 'No-Show'),
+      allowNull: true,
+    },
+    is_walkin: {
+      type: DataTypes.BOOLEAN,
       allowNull: true,
     },
     reason: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    status: {
-      type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled'),
+    created_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    approved_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    approved_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    rejection_reason: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     created_at: {
@@ -73,15 +94,10 @@ Appointment.init(
       allowNull: true,
       defaultValue: DataTypes.NOW,
     },
-    updated_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: DataTypes.NOW,
-    },
   },
   {
     sequelize,
-    tableName: 'appointment',
+    tableName: 'appointments',
     timestamps: false,
     freezeTableName: true,
   }

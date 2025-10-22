@@ -37,7 +37,7 @@ export const authenticatePatient = (req: Request, res: Response, next: NextFunct
     }
 
     // Add patient info to request object
-    (req as any).patient = {
+    (req as any).user = {
       patient_id: (payload as any).patient_id,
       email: (payload as any).email,
       full_name: (payload as any).full_name

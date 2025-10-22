@@ -28,6 +28,7 @@ import {
   Group as GroupIcon,
 } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
+import MargaLogo from '../components/MargaLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -54,7 +55,7 @@ export default function Login() {
       const payload = JSON.parse(atob(tokenParts[1]));
       
       login(data.token, payload);
-      navigate('/');
+      navigate('/admin');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {
@@ -152,71 +153,9 @@ export default function Login() {
           <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
             <Fade in={true} timeout={1000}>
               <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4 } }}>
-                <Box
-                  sx={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: { xs: 70, sm: 80, md: 90 },
-                    height: { xs: 70, sm: 80, md: 90 },
-                    borderRadius: '50%',
-                    background: isDark
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                      : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                    boxShadow: isDark
-                      ? '0 8px 32px rgba(59, 130, 246, 0.3), 0 4px 16px rgba(16, 185, 129, 0.2)'
-                      : '0 8px 32px rgba(30, 64, 175, 0.3), 0 4px 16px rgba(5, 150, 105, 0.2)',
-                    mx: 'auto',
-                    mb: { xs: 2, sm: 3 },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: -2,
-                      borderRadius: '50%',
-                      background: isDark
-                        ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                        : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                      opacity: 0.3,
-                      filter: 'blur(8px)',
-                    },
-                  }}
-                >
-                  <HospitalIcon sx={{ 
-                    fontSize: { xs: 35, sm: 40, md: 45 }, 
-                    color: 'white', 
-                    position: 'relative', 
-                    zIndex: 1 
-                  }} />
+                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+                  <MargaLogo size="large" variant="vertical" />
                 </Box>
-                <Typography 
-                  variant="h4" 
-                  component="h1" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 700,
-                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' },
-                    background: isDark
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                      : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  CATMS
-                </Typography>
-                <Typography 
-                  variant="body1" 
-                  color="text.secondary"
-                  sx={{
-                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
-                    fontSize: { xs: '0.875rem', sm: '1rem' },
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Clinic Appointment & Treatment Management System
-                </Typography>
               </Box>
             </Fade>
             
@@ -244,7 +183,7 @@ export default function Login() {
             </Box>
             
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-              {error && (
+          {error && (
                 <Fade in={!!error} timeout={300}>
                   <Alert 
                     severity="error" 
@@ -258,7 +197,7 @@ export default function Login() {
                       },
                     }}
                   >
-                    {error}
+              {error}
                   </Alert>
                 </Fade>
               )}
@@ -267,12 +206,12 @@ export default function Login() {
                 margin="normal"
                 required
                 fullWidth
-                id="email"
+              id="email"
                 label="Email Address"
                 name="email"
                 autoComplete="email"
                 autoFocus
-                value={email}
+              value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 InputProps={{
                   startAdornment: (
@@ -316,9 +255,9 @@ export default function Login() {
                 name="password"
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
-                id="password"
+              id="password"
                 autoComplete="current-password"
-                value={password}
+              value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 InputProps={{
                   startAdornment: (
@@ -373,10 +312,10 @@ export default function Login() {
               />
               
               <Button
-                type="submit"
+            type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+            disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LockIcon />}
                 sx={{
                   mt: { xs: 2, sm: 2.5 },
@@ -520,7 +459,7 @@ export default function Login() {
                     wordBreak: 'break-all',
                   }}
                 >
-                  admin@catms.com / admin123
+            admin@catms.com / admin123
                 </Typography>
                 <Typography 
                   variant="caption" 
@@ -535,7 +474,7 @@ export default function Login() {
                     wordBreak: 'break-all',
                   }}
                 >
-                  doctor@catms.com / doctor123
+            doctor@catms.com / doctor123
                 </Typography>
               </Box>
             </Box>

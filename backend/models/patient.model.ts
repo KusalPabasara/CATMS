@@ -4,8 +4,8 @@ import sequelize from '../config/database';
 interface PatientAttributes {
   patient_id: number;
   full_name: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   national_id?: string;
   dob?: Date;
   gender?: 'Male' | 'Female' | 'Other';
@@ -28,8 +28,8 @@ interface PatientAttributes {
 class Patient extends Model<PatientAttributes, PatientAttributes> {
   public patient_id!: number;
   public full_name!: string;
-  public first_name!: string;
-  public last_name!: string;
+  public first_name?: string;
+  public last_name?: string;
   public national_id?: string;
   public dob?: Date;
   public gender?: 'Male' | 'Female' | 'Other';
@@ -52,8 +52,8 @@ class Patient extends Model<PatientAttributes, PatientAttributes> {
 Patient.init({
   patient_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   full_name: { type: DataTypes.STRING(100), allowNull: false },
-  first_name: { type: DataTypes.STRING(25), allowNull: false },
-  last_name: { type: DataTypes.STRING(25), allowNull: false },
+  first_name: { type: DataTypes.STRING(25), allowNull: true },
+  last_name: { type: DataTypes.STRING(25), allowNull: true },
   national_id: { type: DataTypes.STRING(20), unique: true },
   dob: DataTypes.DATEONLY,
   gender: DataTypes.ENUM('Male', 'Female', 'Other'),

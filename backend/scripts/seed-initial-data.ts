@@ -14,16 +14,16 @@ const seedInitialData = async () => {
     console.log('✅ Found existing roles:', roles.map(r => r.name));
 
     // Create a default branch if it doesn't exist
-    let branch = await Branch.findOne({ where: { branch_name: 'Main Clinic' } });
+    let branch = await Branch.findOne({ where: { name: 'Main Clinic' } });
     if (!branch) {
       branch = await Branch.create({
-        branch_name: 'Main Clinic',
+        name: 'Main Clinic',
         location: '123 Galle Road, Colombo 03, Sri Lanka',
         phone: '+94-11-234-5678'
       });
-      console.log('✅ Branch created:', branch.branch_name);
+      console.log('✅ Branch created:', branch.name);
     } else {
-      console.log('✅ Using existing branch:', branch.branch_name);
+      console.log('✅ Using existing branch:', branch.name);
     }
 
     // Check if admin user already exists

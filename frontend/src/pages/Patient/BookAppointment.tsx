@@ -20,7 +20,6 @@ import {
   Chip,
   Divider,
 } from '@mui/material';
-import { Grid } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   CalendarToday as CalendarIcon,
@@ -47,6 +46,7 @@ interface Treatment {
   description: string;
   cost: number;
   duration: number;
+  category?: string;
 }
 
 export default function BookAppointment() {
@@ -141,8 +141,9 @@ export default function BookAppointment() {
         appointment_date: `${formData.appointment_date}T${formData.appointment_time}:00`,
       };
 
-      await api.post('/api/patient-auth/appointments', appointmentData);
-      setSuccess('Appointment booked successfully!');
+      // Use the new patient endpoint; backend enforces Pending status
+      await api.post('/api/appointments/patient', appointmentData);
+      setSuccess('Appointment request submitted. You will be notified after approval.');
       
       // Reset form
       setFormData({
@@ -315,9 +316,9 @@ export default function BookAppointment() {
           <CircularProgress size={60} />
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '2fr 1fr' }} gap={3}>
           {/* Appointment Form */}
-          <Grid item xs={12} md={8}>
+          <Box>
             <Card
               sx={{
                 background: isDark 
@@ -337,8 +338,8 @@ export default function BookAppointment() {
                 </Typography>
                 
                 <Box component="form" onSubmit={handleSubmit}>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Select Doctor</InputLabel>
                         <Select
@@ -363,9 +364,9 @@ export default function BookAppointment() {
                           ))}
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Select Treatment</InputLabel>
                         <Select
@@ -387,9 +388,9 @@ export default function BookAppointment() {
                           ))}
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         type="date"
@@ -403,9 +404,9 @@ export default function BookAppointment() {
                         }}
                         required
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         type="time"
@@ -415,9 +416,9 @@ export default function BookAppointment() {
                         InputLabelProps={{ shrink: true }}
                         required
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         label="Reason for Visit"
@@ -426,9 +427,9 @@ export default function BookAppointment() {
                         placeholder="Brief description of your symptoms or concerns"
                         required
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Priority</InputLabel>
                         <Select
@@ -442,9 +443,9 @@ export default function BookAppointment() {
                           <MenuItem value="urgent">Urgent</MenuItem>
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12}>
+                    <Box sx={{ gridColumn: '1' }}>
                       <TextField
                         fullWidth
                         multiline
@@ -454,8 +455,8 @@ export default function BookAppointment() {
                         onChange={(e) => handleInputChange('notes', e.target.value)}
                         placeholder="Any additional information you'd like to share with your doctor"
                       />
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
 
                   <Divider sx={{ my: 3 }} />
 
@@ -492,10 +493,10 @@ export default function BookAppointment() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Appointment Info */}
-          <Grid item xs={12} md={4}>
+          <Box>
             <Card
               sx={{
                 background: isDark 
@@ -589,8 +590,8 @@ export default function BookAppointment() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
     </Box>
   );

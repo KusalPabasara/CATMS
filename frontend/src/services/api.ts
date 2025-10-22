@@ -1,10 +1,12 @@
 import axios from 'axios';
 
+const DEBUG = false; // set true for local verbose logging
+
 axios.defaults.baseURL = 'http://localhost:5000'; // Your backend URL
 
 // Create a separate axios instance for profile picture uploads
 const profileUploadApi = axios.create({
-  baseURL: 'http://localhost:5001', // Profile picture upload service
+  baseURL: 'http://localhost:5000', // Profile picture upload service
   withCredentials: true
 });
 axios.defaults.withCredentials = true;
@@ -12,40 +14,48 @@ axios.defaults.withCredentials = true;
 // Add request interceptor to include auth token
 axios.interceptors.request.use(
   (config) => {
-    console.log('🌐 API Request:', config.method?.toUpperCase(), config.url);
-    console.log('🌐 API Request headers:', config.headers);
-    console.log('🌐 API Request data:', config.data);
+    if (DEBUG) {
+      console.log('API →', config.method?.toUpperCase(), config.url);
+      // Do not log headers or tokens in production
+    }
     
     // Check for admin token first
     let token = localStorage.getItem('token');
-    console.log('🌐 API Request: Admin token from localStorage:', token ? `${token.substring(0, 20)}...` : 'None');
+    if (DEBUG) {
+      console.log('API token(admin) present:', !!token);
+    }
     
     // If no admin token, check for patient token
     if (!token) {
       try {
         const patientStorage = localStorage.getItem('patient-auth-storage');
-        console.log('🌐 API Request: Patient storage from localStorage:', patientStorage ? 'Present' : 'None');
+        if (DEBUG) {
+          console.log('API patient storage present:', !!patientStorage);
+        }
         if (patientStorage) {
           const parsed = JSON.parse(patientStorage);
           token = parsed.state?.token;
-          console.log('🌐 API Request: Patient token from storage:', token ? `${token.substring(0, 20)}...` : 'None');
+          if (DEBUG) {
+            console.log('API token(patient) present:', !!token);
+          }
         }
       } catch (e) {
-        console.error('🌐 API Request: Error parsing patient storage:', e);
+        if (DEBUG) console.error('API patient storage parse error');
       }
     }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🌐 API Request: Token added to headers');
-    } else {
-      console.log('🌐 API Request: No token found');
+      // set content-type only when sending a body; axios sets it automatically
+      if (config.data && !config.headers['Content-Type']) {
+        // leave undefined; axios will infer JSON or form-data
+      }
     }
     
     return config;
   },
   (error) => {
-    console.error('🌐 API Request error:', error);
+    if (DEBUG) console.error('API request error');
     return Promise.reject(error);
   }
 );
@@ -53,17 +63,13 @@ axios.interceptors.request.use(
 // Add response interceptor for error handling
 axios.interceptors.response.use(
   (response) => {
-    console.log('🌐 API Response:', response.status, response.config.url);
+    if (DEBUG) console.log('API ←', response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error('🌐 API Response error:', error.response?.status, error.config?.url);
-    console.error('🌐 API Response error details:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message
-    });
+    if (DEBUG) {
+      console.error('API response error:', error.response?.status, error.config?.url);
+    }
     
     if (error.response?.status === 401) {
       // Only redirect if we're not on patient login/register pages
@@ -85,56 +91,47 @@ axios.interceptors.response.use(
 // Add the same interceptors to profile upload API
 profileUploadApi.interceptors.request.use(
   (config) => {
-    console.log('🌐 Profile Upload API Request:', config.method?.toUpperCase(), config.url);
-    console.log('🌐 Profile Upload API Request headers:', config.headers);
+    if (DEBUG) console.log('Upload API →', config.method?.toUpperCase(), config.url);
     
     // Check for admin token first
     let token = localStorage.getItem('token');
-    console.log('🌐 Profile Upload API Request: Admin token:', token ? 'Found' : 'Not found');
+    if (DEBUG) console.log('Upload token(admin) present:', !!token);
     
     // If no admin token, check for patient token
     if (!token) {
       try {
         const patientStorage = localStorage.getItem('patient-auth-storage');
-        console.log('🌐 Profile Upload API Request: Patient storage:', patientStorage);
+        if (DEBUG) console.log('Upload patient storage present:', !!patientStorage);
         if (patientStorage) {
           const parsed = JSON.parse(patientStorage);
           token = parsed.state?.token;
-          console.log('🌐 Profile Upload API Request: Patient token from storage:', token ? 'Found' : 'Not found');
+          if (DEBUG) console.log('Upload token(patient) present:', !!token);
         }
       } catch (e) {
-        console.error('🌐 Profile Upload API Request: Error parsing patient storage:', e);
+        if (DEBUG) console.error('Upload patient storage parse error');
       }
     }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🌐 Profile Upload API Request: Token added to headers:', `Bearer ${token.substring(0, 20)}...`);
-    } else {
-      console.log('🌐 Profile Upload API Request: No token found');
+      // Content-Type for uploads is set automatically by browser when FormData is used
     }
     
     return config;
   },
   (error) => {
-    console.error('🌐 Profile Upload API Request error:', error);
+    if (DEBUG) console.error('Upload API request error');
     return Promise.reject(error);
   }
 );
 
 profileUploadApi.interceptors.response.use(
   (response) => {
-    console.log('🌐 Profile Upload API Response:', response.status, response.config.url);
+    if (DEBUG) console.log('Upload API ←', response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error('🌐 Profile Upload API Response error:', error.response?.status, error.config?.url);
-    console.error('🌐 Profile Upload API Response error details:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message
-    });
+    if (DEBUG) console.error('Upload API response error:', error.response?.status, error.config?.url);
     
     if (error.response?.status === 401) {
       // Only redirect if we're not on patient login/register pages

@@ -2,6 +2,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
 import ThemeToggle from '../components/ThemeToggle';
+import MargaLogo from '../components/MargaLogo';
 import {
   AppBar,
   Box,
@@ -31,6 +32,8 @@ import {
   Logout as LogoutIcon,
   Menu as MenuIcon,
   LocalHospital as HospitalIcon,
+  Psychology as PsychologyIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -53,28 +56,24 @@ export default function MainLayout() {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: <DashboardIcon /> },
-    { name: 'Patients', href: '/patients', icon: <PeopleIcon /> },
-    { name: 'Appointments', href: '/appointments', icon: <CalendarIcon /> },
-    { name: 'Calendar View', href: '/appointments/calendar', icon: <EventIcon /> },
-    { name: 'Treatments', href: '/treatments', icon: <MedicalIcon /> },
-    { name: 'Billing', href: '/billing', icon: <PaymentIcon /> },
-    { name: 'Audit Logs', href: '/audit-logs', icon: <SecurityIcon /> },
+    { name: 'Dashboard', href: '/admin', icon: <DashboardIcon /> },
+    { name: 'Patients', href: '/admin/patients', icon: <PeopleIcon /> },
+    { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
+    { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
+    { name: 'Calendar View', href: '/admin/appointments/calendar', icon: <EventIcon /> },
+    { name: 'Treatments', href: '/admin/treatments', icon: <MedicalIcon /> },
+    { name: 'Billing', href: '/admin/billing', icon: <PaymentIcon /> },
+    { name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> },
+    // AI Medical Assistant only for doctors
+    ...(user?.role === 'Doctor' ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),
   ];
 
-  const isActive = (href: string) => location.pathname === href;
+  const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
 
   const drawer = (
     <Box>
       <Toolbar>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
-            <HospitalIcon />
-          </Avatar>
-          <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
-            CATMS
-          </Typography>
-        </Box>
+        <MargaLogo size="small" variant="horizontal" />
       </Toolbar>
       <Divider />
       
@@ -168,7 +167,7 @@ export default function MainLayout() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            CATMS
+            Marga.lk
           </Typography>
           <ThemeToggle />
         </Toolbar>

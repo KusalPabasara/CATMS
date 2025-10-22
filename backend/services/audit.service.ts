@@ -57,6 +57,9 @@ export const auditActions = {
   
   // User actions
   USER_CREATED: "User Created",
+  USER_UPDATED: "User Updated",
+  USER_DELETED: "User Deleted",
+  USER_PASSWORD_RESET: "User Password Reset",
   
   // Generic actions
   CREATE: "Create",
@@ -81,7 +84,13 @@ export const auditActions = {
   CLAIM_CREATED: "Insurance Claim Created",
   CLAIM_UPDATED: "Insurance Claim Updated",
   CLAIM_APPROVED: "Insurance Claim Approved",
-  CLAIM_REJECTED: "Insurance Claim Rejected"
+  CLAIM_REJECTED: "Insurance Claim Rejected",
+  
+  // AI Medical Assistant actions
+  AI_QUERY: "AI Medical Query",
+  AI_QUERY_SAVED: "AI Medical Query Saved",
+  AI_MODEL_SELECTED: "AI Model Selected",
+  AI_RECOMMENDATION_GENERATED: "AI Recommendation Generated"
 };
 
 // Helper function to get client IP address
