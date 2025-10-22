@@ -19,6 +19,17 @@ axios.interceptors.request.use(
       // Do not log headers or tokens in production
     }
     
+    // Skip authentication for public endpoints
+    const publicEndpoints = ['/api/branches', '/api/auth/login'];
+    const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
+    
+    if (isPublicEndpoint) {
+      if (DEBUG) {
+        console.log('API skipping auth for public endpoint:', config.url);
+      }
+      return config;
+    }
+    
     // Check for admin token first
     let token = localStorage.getItem('token');
     if (DEBUG) {
@@ -72,6 +83,17 @@ axios.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
+      // Skip redirect for public endpoints
+      const publicEndpoints = ['/api/branches', '/api/auth/login'];
+      const isPublicEndpoint = publicEndpoints.some(endpoint => error.config?.url?.includes(endpoint));
+      
+      if (isPublicEndpoint) {
+        if (DEBUG) {
+          console.log('API skipping redirect for public endpoint:', error.config?.url);
+        }
+        return Promise.reject(error);
+      }
+      
       // Only redirect if we're not on patient login/register pages
       const currentPath = window.location.pathname;
       const isPatientAuth = currentPath.includes('/patient/login') || 

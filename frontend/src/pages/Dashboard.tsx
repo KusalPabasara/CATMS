@@ -121,7 +121,7 @@ export default function Dashboard() {
   const reportPrintRef = useRef<HTMLDivElement>(null);
   const handleReportPrint = useReactToPrint({
     content: () => reportPrintRef.current,
-    documentTitle: `CATMS_Dashboard_Report_${new Date().toISOString().split('T')[0]}`,
+    documentTitle: `MedSync_Dashboard_Report_${new Date().toISOString().split('T')[0]}`,
   } as any);
 
   useEffect(() => {
@@ -329,7 +329,7 @@ export default function Dashboard() {
           <Box display="flex" justifyContent="space-between" alignItems="flex-start">
             <Box>
               <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-                CATMS Dashboard
+                MedSync Dashboard
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Welcome back! Here's your clinic overview and key performance indicators.

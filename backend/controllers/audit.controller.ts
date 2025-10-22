@@ -21,8 +21,23 @@ export const getAuditLogs = async (req: Request, res: Response) => {
     // Build where clause for filtering
     const whereClause: any = {};
     
+    // Exclude AI Medical Assistant actions from admin audit logs
+    whereClause.action = {
+      [Op.notIn]: [
+        'AI Medical Query',
+        'AI Medical Query Saved', 
+        'AI Model Selected',
+        'AI Recommendation Generated'
+      ]
+    };
+    
     if (action) {
-      whereClause.action = { [Op.like]: `%${action}%` };
+      whereClause.action = { 
+        [Op.and]: [
+          whereClause.action,
+          { [Op.like]: `%${action}%` }
+        ]
+      };
     }
     
     if (target_table) {
@@ -120,6 +135,17 @@ export const getAuditStats = async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     
     const whereClause: any = {};
+    
+    // Exclude AI Medical Assistant actions from admin audit stats
+    whereClause.action = {
+      [Op.notIn]: [
+        'AI Medical Query',
+        'AI Medical Query Saved', 
+        'AI Model Selected',
+        'AI Recommendation Generated'
+      ]
+    };
+    
     if (start_date || end_date) {
       whereClause.timestamp = {};
       if (start_date) {
@@ -185,11 +211,19 @@ export const getAuditStats = async (req: Request, res: Response) => {
       })
     );
 
-    // Get recent activity (last 24 hours)
+    // Get recent activity (last 24 hours) - excluding AI actions
     const recentActivity = await AuditLog.count({
       where: {
         timestamp: {
           [Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        },
+        action: {
+          [Op.notIn]: [
+            'AI Medical Query',
+            'AI Medical Query Saved', 
+            'AI Model Selected',
+            'AI Recommendation Generated'
+          ]
         }
       }
     });
@@ -212,6 +246,17 @@ export const exportAuditLogs = async (req: Request, res: Response) => {
     const { start_date, end_date, format = 'csv' } = req.query;
     
     const whereClause: any = {};
+    
+    // Exclude AI Medical Assistant actions from admin audit export
+    whereClause.action = {
+      [Op.notIn]: [
+        'AI Medical Query',
+        'AI Medical Query Saved', 
+        'AI Model Selected',
+        'AI Recommendation Generated'
+      ]
+    };
+    
     if (start_date || end_date) {
       whereClause.timestamp = {};
       if (start_date) {

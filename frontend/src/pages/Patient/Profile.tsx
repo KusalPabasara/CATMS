@@ -50,10 +50,9 @@ interface PatientData {
   gender: string;
   address: string;
   emergency_contact: string;
-  emergency_phone: string;
+  emergency_contact_phone: string;
   blood_type: string;
   allergies: string;
-  medical_history: string;
   profile_picture?: string;
   active: boolean;
   created_at: string;
@@ -84,10 +83,10 @@ export default function Profile() {
     gender: '',
     address: '',
     emergency_contact: '',
-    emergency_phone: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
     blood_type: '',
     allergies: '',
-    medical_history: '',
     profile_picture: '',
   });
 
@@ -206,10 +205,10 @@ export default function Profile() {
         gender: patientData.gender || '',
         address: patientData.address || '',
         emergency_contact: patientData.emergency_contact || '',
-        emergency_phone: patientData.emergency_phone || '',
+        emergency_contact_name: patientData.emergency_contact_name || '',
+        emergency_contact_phone: patientData.emergency_contact_phone || '',
         blood_type: patientData.blood_type || '',
         allergies: patientData.allergies || '',
-        medical_history: patientData.medical_history || '',
         profile_picture: patientData.profile_picture || '',
       });
     }
@@ -850,8 +849,8 @@ export default function Profile() {
                   <TextField
                     fullWidth
                     label="Emergency Contact Phone"
-                    value={formData.emergency_phone}
-                    onChange={(e) => handleInputChange('emergency_phone', e.target.value)}
+                    value={formData.emergency_contact_phone}
+                    onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
                     disabled={!isEditing}
                   />
                 </Box>

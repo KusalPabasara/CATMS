@@ -47,6 +47,7 @@ interface Doctor {
   user_id: number;
   full_name: string;
   email: string;
+  staff_email?: string;
   phone?: string;
   speciality?: string;
   branch_id?: number;
@@ -83,6 +84,7 @@ const Doctors: React.FC = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
+    staff_email: '',
     phone: '',
     speciality: '',
     branch_id: '',
@@ -91,6 +93,7 @@ const Doctors: React.FC = () => {
   const [editFormData, setEditFormData] = useState({
     full_name: '',
     email: '',
+    staff_email: '',
     phone: '',
     speciality: '',
     branch_id: '',
@@ -139,8 +142,8 @@ const Doctors: React.FC = () => {
       setSubmitting(true);
       setError('');
       
-      if (!formData.full_name || !formData.email || !formData.password) {
-        setError('Full name, email, and password are required');
+      if (!formData.full_name || !formData.email || !formData.staff_email || !formData.password) {
+        setError('Full name, email, staff email, and password are required');
         return;
       }
 
@@ -251,6 +254,7 @@ const Doctors: React.FC = () => {
     setEditFormData({
       full_name: doctor.full_name,
       email: doctor.email,
+      staff_email: doctor.staff_email || '',
       phone: doctor.phone || '',
       speciality: doctor.speciality || '',
       branch_id: doctor.branch_id?.toString() || '',
@@ -270,6 +274,7 @@ const Doctors: React.FC = () => {
     setFormData({
       full_name: '',
       email: '',
+      staff_email: '',
       phone: '',
       speciality: '',
       branch_id: '',
@@ -334,7 +339,7 @@ const Doctors: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Doctor</TableCell>
-                  <TableCell>Contact</TableCell>
+                  <TableCell>Staff Email (Login)</TableCell>
                   <TableCell>Speciality</TableCell>
                   <TableCell>Branch</TableCell>
                   <TableCell>Status</TableCell>
@@ -360,17 +365,9 @@ const Doctors: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box>
-                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                          <EmailIcon fontSize="small" color="action" />
-                          <Typography variant="body2">{doctor.email}</Typography>
-                        </Box>
-                        {doctor.phone && (
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <PhoneIcon fontSize="small" color="action" />
-                            <Typography variant="body2">{doctor.phone}</Typography>
-                          </Box>
-                        )}
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <EmailIcon fontSize="small" color="action" />
+                        <Typography variant="body2">{doctor.staff_email || doctor.email}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -449,6 +446,15 @@ const Doctors: React.FC = () => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+              />
+              <TextField
+                fullWidth
+                label="Staff Email (for login)"
+                type="email"
+                value={formData.staff_email}
+                onChange={(e) => setFormData({ ...formData, staff_email: e.target.value })}
+                required
+                helperText="This email will be used for staff login portal"
               />
               <TextField
                 fullWidth
@@ -531,6 +537,15 @@ const Doctors: React.FC = () => {
                 value={editFormData.email}
                 onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                 required
+              />
+              <TextField
+                fullWidth
+                label="Staff Email (for login)"
+                type="email"
+                value={editFormData.staff_email}
+                onChange={(e) => setEditFormData({ ...editFormData, staff_email: e.target.value })}
+                required
+                helperText="This email will be used for staff login portal"
               />
               <TextField
                 fullWidth

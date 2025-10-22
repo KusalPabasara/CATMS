@@ -5,6 +5,8 @@ interface User {
   user_id: number;
   role: string;
   branch_id: number;
+  branch_name?: string;
+  staff_title?: string;
   email: string;
 }
 

@@ -2,7 +2,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
 import ThemeToggle from '../components/ThemeToggle';
-import MargaLogo from '../components/MargaLogo';
+import MedSyncLogo from '../components/MedSyncLogo';
 import {
   AppBar,
   Box,
@@ -34,6 +34,10 @@ import {
   LocalHospital as HospitalIcon,
   Psychology as PsychologyIcon,
   PersonAdd as PersonAddIcon,
+  AccountBalance as InsuranceIcon,
+  Assessment as ReportsIcon,
+  Emergency as EmergencyIcon,
+  Speed as PerformanceIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -58,13 +62,46 @@ export default function MainLayout() {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: <DashboardIcon /> },
     { name: 'Patients', href: '/admin/patients', icon: <PeopleIcon /> },
-    { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
+    
+    // Main Admin specific tabs
+    ...(user?.role === 'System Administrator' ? [
+      { name: 'Branch Managers +', href: '/admin/branch-managers', icon: <PersonAddIcon /> },
+    ] : []),
+    
+    // Branch Manager specific tabs
+    ...(user?.role === 'Branch Manager' ? [
+      { name: 'Doctors +', href: '/admin/doctors-management', icon: <PersonAddIcon /> },
+      { name: 'Crew +', href: '/admin/crew-management', icon: <PersonAddIcon /> },
+    ] : []),
+    
+    // General admin tabs (for System Administrator and Branch Manager)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [
+      { name: 'Users', href: '/admin/users', icon: <PersonAddIcon /> },
+      { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
+    ] : []),
+    
     { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
     { name: 'Calendar View', href: '/admin/appointments/calendar', icon: <EventIcon /> },
+    
+    // Emergency Walk-ins only for admin/staff (not nurses)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Emergency Walk-ins', href: '/admin/emergency', icon: <EmergencyIcon /> }] : []),
+    
     { name: 'Treatments', href: '/admin/treatments', icon: <MedicalIcon /> },
     { name: 'Billing', href: '/admin/billing', icon: <PaymentIcon /> },
-    { name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> },
-    // AI Medical Assistant only for doctors
+    
+    // Insurance only for admin/staff (not nurses)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Insurance', href: '/admin/insurance', icon: <InsuranceIcon /> }] : []),
+    
+    // Reports only for admin/staff (not nurses)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Reports', href: '/admin/reports', icon: <ReportsIcon /> }] : []),
+    
+    // Performance only for admin/staff (not nurses)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Performance', href: '/admin/performance', icon: <PerformanceIcon /> }] : []),
+    
+    // Audit Logs only for admin/staff (not nurses)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> }] : []),
+    
+    // AI Medical Assistant ONLY for doctors
     ...(user?.role === 'Doctor' ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),
   ];
 
@@ -73,7 +110,7 @@ export default function MainLayout() {
   const drawer = (
     <Box>
       <Toolbar>
-        <MargaLogo size="small" variant="horizontal" />
+        <MedSyncLogo size="small" variant="horizontal" />
       </Toolbar>
       <Divider />
       
@@ -123,6 +160,16 @@ export default function MainLayout() {
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
               {user?.role}
             </Typography>
+            {user?.staff_title && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textTransform: 'capitalize' }}>
+                {user.staff_title}
+              </Typography>
+            )}
+            {user?.branch_name && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {user.branch_name}
+              </Typography>
+            )}
           </Box>
         </Box>
         <ListItemButton
@@ -166,9 +213,9 @@ export default function MainLayout() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Marga.lk
-          </Typography>
+                <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                  MedSync
+                </Typography>
           <ThemeToggle />
         </Toolbar>
       </AppBar>

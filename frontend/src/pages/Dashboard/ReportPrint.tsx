@@ -40,7 +40,7 @@ const ReportPrint = forwardRef<HTMLDivElement, ReportPrintProps>(
       >
         {/* Header */}
         <div className="text-center mb-8 print:mb-6">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">🏥 CATMS Clinic</h1>
+          <h1 className="text-3xl font-bold text-blue-600 mb-2">🏥 MedSync Clinic</h1>
           <p className="text-xl text-gray-700">Dashboard Report Summary</p>
           <p className="text-sm text-gray-500">Comprehensive Clinic Performance Overview</p>
         </div>
@@ -179,10 +179,10 @@ const ReportPrint = forwardRef<HTMLDivElement, ReportPrintProps>(
         {/* Footer */}
         <div className="border-t border-gray-200 pt-6 text-center">
           <p className="text-sm text-gray-600 mb-2">
-            CATMS Clinic - Professional Healthcare Management System
+            MedSync Clinic - Professional Healthcare Management System
           </p>
           <p className="text-xs text-gray-500">
-            This report was generated automatically by the CATMS system
+            This report was generated automatically by the MedSync system
           </p>
           <p className="text-xs text-gray-500 mt-2">
             Report generated on: {formatDate()}

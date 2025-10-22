@@ -109,7 +109,8 @@ export const patientRegister = async (req: Request, res: Response) => {
     national_id, 
     dob, 
     gender, 
-    address 
+    address,
+    preferred_branch_id
   } = req.body;
 
   try {
@@ -156,6 +157,7 @@ export const patientRegister = async (req: Request, res: Response) => {
       dob,
       gender,
       address,
+      preferred_branch_id: preferred_branch_id ? parseInt(preferred_branch_id) : null,
       active: true
     });
 
@@ -222,7 +224,13 @@ export const updatePatientProfile = async (req: Request, res: Response) => {
     }
 
     // Don't allow changing critical fields
-    const { password, password_hash, patient_id, email, national_id, ...updateData } = req.body;
+    const { password, password_hash, patient_id, email, national_id, date_of_birth, ...rawUpdateData } = req.body;
+
+    // Map frontend field names to database column names
+    const updateData = {
+      ...rawUpdateData,
+      ...(date_of_birth && { dob: date_of_birth })
+    };
 
     await patient.update(updateData);
 
@@ -235,13 +243,20 @@ export const updatePatientProfile = async (req: Request, res: Response) => {
       `Patient updated own profile: ${patient.getDataValue('full_name')}`
     );
 
-    // Return patient data without password
+    // Return patient data without password, map database fields to frontend fields
     const patientData = patient.toJSON();
     delete (patientData as any).password_hash;
 
-    res.json({ 
-      patient: patientData, 
-      message: 'Profile updated successfully' 
+    // Map database column names to frontend field names
+    const responseData = {
+      ...patientData,
+      date_of_birth: patientData.dob,
+      dob: undefined // Remove the db column name
+    };
+
+    res.json({
+      patient: responseData,
+      message: 'Profile updated successfully'
     });
   } catch (err) {
     console.error('Patient profile update error:', err);

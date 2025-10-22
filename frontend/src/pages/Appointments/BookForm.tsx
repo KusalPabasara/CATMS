@@ -53,6 +53,7 @@ export default function BookForm({ onSuccess, onCancel }: BookFormProps) {
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [showPatientForm, setShowPatientForm] = useState(false);
   const [newPatient, setNewPatient] = useState({
@@ -73,15 +74,29 @@ export default function BookForm({ onSuccess, onCancel }: BookFormProps) {
   const fetchFormData = async () => {
     try {
       setLoadingData(true);
-      const [patientsRes, doctorsRes] = await Promise.all([
+      const [patientsRes, doctorsRes, branchesRes] = await Promise.all([
         axios.get("/api/patients"),
-        axios.get("/api/users")
+        axios.get("/api/users"),
+        axios.get("/api/branches")
       ]);
       
       setPatients(patientsRes.data);
+      setBranches(branchesRes.data);
+      
       // Filter only doctors
       const doctorUsers = doctorsRes.data.filter((u: any) => u.Role?.name === 'Doctor');
       setDoctors(doctorUsers);
+      
+      // Set default branch based on user role
+      if (user?.role === 'System Administrator') {
+        // System Admin can select any branch, default to first
+        if (branchesRes.data.length > 0) {
+          setForm(prev => ({ ...prev, branch_id: branchesRes.data[0].branch_id }));
+        }
+      } else if (user?.role === 'Branch Manager') {
+        // Branch Manager is restricted to their branch
+        setForm(prev => ({ ...prev, branch_id: user.branch_id }));
+      }
     } catch (err: any) {
       setError('Failed to load form data. Please try again.');
       console.error('Error fetching form data:', err);
@@ -152,7 +167,7 @@ export default function BookForm({ onSuccess, onCancel }: BookFormProps) {
         ...form,
         patient_id: parseInt(form.patient_id),
         doctor_id: parseInt(form.doctor_id),
-        branch_id: user?.branch_id || 1
+        branch_id: form.branch_id
       };
       
       await axios.post("/api/appointments", appointmentData);
@@ -347,20 +362,27 @@ export default function BookForm({ onSuccess, onCancel }: BookFormProps) {
                 </Box>
               )}
 
-              {/* Branch */}
-              {!isAdmin && (
-                <Box flex={1}>
-                  <Typography variant="subtitle2" color="text.primary" mb={1}>
-                    Branch
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    value={`Branch ${form.branch_id}`}
-                    disabled
-                    variant="outlined"
-                  />
-                </Box>
-              )}
+              {/* Branch Selection */}
+              <Box flex={1}>
+                <Typography variant="subtitle2" color="text.primary" mb={1}>
+                  Branch
+                </Typography>
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Branch</InputLabel>
+                  <Select
+                    value={form.branch_id}
+                    onChange={(e) => setForm(prev => ({ ...prev, branch_id: e.target.value as number }))}
+                    label="Branch"
+                    disabled={user?.role === 'Branch Manager'} // Branch Managers can't change branch
+                  >
+                    {branches.map((branch) => (
+                      <MenuItem key={branch.branch_id} value={branch.branch_id}>
+                        {branch.name} - {branch.location}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
             </Box>
           </Box>
 

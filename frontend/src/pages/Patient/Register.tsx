@@ -31,7 +31,7 @@ import {
   Badge as BadgeIcon,
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
-import MargaLogo from '../../components/MargaLogo';
+import MedSyncLogo from '../../components/MedSyncLogo';
 export default function PatientRegister() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -50,7 +50,8 @@ export default function PatientRegister() {
     national_id: '',
     dob: '',
     gender: '',
-    address: ''
+    address: '',
+    preferred_branch_id: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +94,8 @@ export default function PatientRegister() {
         national_id: formData.national_id,
         dob: formData.dob || null,
         gender: formData.gender || null,
-        address: formData.address
+        address: formData.address,
+        preferred_branch_id: formData.preferred_branch_id || null
       };
 
       const response = await api.post('/api/patient-auth/register', registrationData);
@@ -111,7 +113,8 @@ export default function PatientRegister() {
           national_id: '',
           dob: '',
           gender: '',
-          address: ''
+          address: '',
+          preferred_branch_id: ''
         });
         
         // Redirect to login page after a short delay
@@ -183,14 +186,14 @@ export default function PatientRegister() {
       }}>
         <CardContent sx={{ p: 4 }}>
           <Box display="flex" alignItems="center" justifyContent="center" mb={4}>
-            <MargaLogo size="large" variant="horizontal" />
+            <MedSyncLogo size="large" variant="horizontal" />
           </Box>
 
           <Typography variant="h5" component="h2" textAlign="center" mb={1} fontWeight="bold">
             Create Your Account
           </Typography>
           <Typography variant="body2" textAlign="center" color="text.secondary" mb={4}>
-            Join Marga.lk to book appointments and manage your health records online
+            Join MedSync to book appointments and manage your health records online
           </Typography>
 
           {(error || success) && (
@@ -258,6 +261,34 @@ export default function PatientRegister() {
                         <CalendarIcon color="action" />
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#9ca3af',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#6b7280',
+                      '&.Mui-focused': {
+                        color: '#3b82f6',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      color: '#000000',
+                      '&::-webkit-calendar-picker-indicator': {
+                        filter: 'invert(0)',
+                        opacity: 1,
+                      },
+                    },
                   }}
                 />
 
@@ -330,6 +361,34 @@ export default function PatientRegister() {
                   ),
                 }}
               />
+
+              {/* Branch Selection */}
+              <Box>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
+                  Preferred Branch
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Box>
+
+              <FormControl fullWidth>
+                <InputLabel>Select Your Preferred Branch</InputLabel>
+                <Select
+                  value={formData.preferred_branch_id}
+                  onChange={(e) => handleInputChange('preferred_branch_id', e.target.value)}
+                  label="Select Your Preferred Branch"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <HospitalIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                >
+                  <MenuItem value="1">Colombo Branch - Colombo, Sri Lanka</MenuItem>
+                  <MenuItem value="2">Galle Branch - Galle, Sri Lanka</MenuItem>
+                  <MenuItem value="3">Kandy Branch - Kandy, Sri Lanka</MenuItem>
+                </Select>
+              </FormControl>
 
               {/* Account Security */}
               <Box>

@@ -1,9 +1,170 @@
 import { Request, Response } from "express";
 import Appointment from "../models/appointment.model";
-import Patient from "../models/patient.model";
 import User from "../models/user.model";
 import Branch from "../models/branch.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
+
+export const createEmergencyWalkIn = async (req: Request, res: Response) => {
+  try {
+    const { patient_id, doctor_id, branch_id, reason, emergency_type, priority_level } = req.body;
+    const created_by = (req as any).user?.user_id;
+
+    // Validate required fields
+    if (!patient_id || !doctor_id || !branch_id || !reason) {
+      return res.status(400).json({ error: "Missing required fields for emergency walk-in" });
+    }
+
+    // Check if patient exists
+    const patient = await User.findByPk(patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    // Check if doctor exists and is available
+    const doctor = await User.findByPk(doctor_id);
+    if (!doctor) {
+      return res.status(404).json({ error: "Doctor not found" });
+    }
+
+    // Check if branch exists
+    const branch = await Branch.findByPk(branch_id);
+    if (!branch) {
+      return res.status(404).json({ error: "Branch not found" });
+    }
+
+    // Create emergency appointment
+    const emergencyAppointment = await Appointment.create({
+      patient_id,
+      doctor_id,
+      branch_id,
+      appointment_date: new Date(), // Current time for emergency
+      status: 'Emergency',
+      is_walkin: true,
+      reason: reason,
+      created_by,
+      approved_by: created_by, // Auto-approve emergency appointments
+      approved_at: new Date()
+    });
+
+    // Log audit trail
+    await logAuditWithRequest(req, auditActions.CREATE, 'Appointment', emergencyAppointment.appointment_id, {
+      action: 'Emergency walk-in created',
+      patient_id,
+      doctor_id,
+      branch_id,
+      emergency_type,
+      priority_level
+    });
+
+    // Send notification to doctor
+    try {
+      await sendEmail({
+        to: doctor.email,
+        subject: 'Emergency Walk-in Patient',
+        template: emailTemplates.EMERGENCY_WALKIN,
+        data: {
+          doctorName: doctor.full_name,
+          patientName: patient.full_name,
+          emergencyType: emergency_type || 'General Emergency',
+          priorityLevel: priority_level || 'Medium',
+          reason: reason,
+          branchName: branch.branch_name,
+          appointmentTime: new Date().toLocaleString()
+        }
+      });
+    } catch (emailError) {
+      console.error('Failed to send emergency notification email:', emailError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Emergency walk-in appointment created successfully',
+      appointment: emergencyAppointment
+    });
+
+  } catch (error) {
+    console.error('Error creating emergency walk-in:', error);
+    res.status(500).json({ error: 'Failed to create emergency walk-in appointment' });
+  }
+};
+
+export const getEmergencyAppointments = async (req: Request, res: Response) => {
+  try {
+    const { branch_id: userBranchId } = req.user as any;
+    const { status = 'Emergency', limit = 50 } = req.query;
+
+    // Build branch condition
+    const branchCondition = userBranchId ? { branch_id: userBranchId } : {};
+
+    const emergencyAppointments = await Appointment.findAll({
+      where: {
+        ...branchCondition,
+        status: status as string,
+        is_walkin: true
+      },
+      order: [['appointment_date', 'DESC']],
+      limit: parseInt(limit as string)
+    });
+
+    res.json({
+      success: true,
+      data: emergencyAppointments,
+      count: emergencyAppointments.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching emergency appointments:', error);
+    res.status(500).json({ error: 'Failed to fetch emergency appointments' });
+  }
+};
+
+export const updateEmergencyAppointmentStatus = async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    const { status, notes } = req.body;
+    const updated_by = (req as any).user?.user_id;
+
+    // Validate status
+    const validStatuses = ['Emergency', 'Completed', 'Cancelled', 'No-Show'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status for emergency appointment' });
+    }
+
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Emergency appointment not found' });
+    }
+
+    if (appointment.status !== 'Emergency') {
+      return res.status(400).json({ error: 'This is not an emergency appointment' });
+    }
+
+    // Update appointment status
+    const updatedAppointment = await appointment.update({
+      status: status as any,
+      reason: notes ? `${appointment.reason}\n\nStatus Update: ${notes}` : appointment.reason
+    });
+
+    // Log audit trail
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+      action: 'Emergency appointment status updated',
+      old_status: appointment.status,
+      new_status: status,
+      notes,
+      updated_by
+    });
+
+    res.json({
+      success: true,
+      message: 'Emergency appointment status updated successfully',
+      appointment: updatedAppointment
+    });
+
+  } catch (error) {
+    console.error('Error updating emergency appointment status:', error);
+    res.status(500).json({ error: 'Failed to update emergency appointment status' });
+  }
+};
 
 export const getAllAppointments = async (req: Request, res: Response) => {
   try {
@@ -402,5 +563,242 @@ export const cancelAppointment = async (req: Request, res: Response) => {
     res.json({ message: "Appointment cancelled successfully." });
   } catch (err) {
     res.status(500).json({ error: "Cancellation failed", details: err });
+  }
+};
+
+// ===== PHASE 4: APPOINTMENT RESCHEDULING =====
+
+export const rescheduleAppointment = async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    const { new_appointment_date, reason, notify_patient = true } = req.body;
+    const rescheduled_by = (req as any).user?.user_id;
+
+    // Validate required fields
+    if (!new_appointment_date) {
+      return res.status(400).json({ error: 'New appointment date is required' });
+    }
+
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // Check if appointment can be rescheduled
+    if (appointment.status === 'Completed' || appointment.status === 'Cancelled') {
+      return res.status(400).json({ error: 'Cannot reschedule completed or cancelled appointments' });
+    }
+
+    // Check for conflicts with new date
+    const newDate = new Date(new_appointment_date);
+    const hasConflict = await hasConflictingAppointment(
+      appointment.doctor_id!,
+      newDate,
+      appointmentId
+    );
+
+    if (hasConflict) {
+      return res.status(400).json({ error: 'Doctor has a conflicting appointment at the new time' });
+    }
+
+    // Check if new date is within working hours
+    if (!isWorkingHour(newDate)) {
+      return res.status(400).json({ error: 'New appointment time is outside working hours' });
+    }
+
+    const oldDate = appointment.appointment_date;
+    const oldReason = appointment.reason;
+
+    // Update appointment
+    const updatedAppointment = await appointment.update({
+      appointment_date: newDate,
+      reason: reason ? `${oldReason}\n\nRescheduled: ${reason}` : oldReason,
+      status: 'Scheduled' // Reset to scheduled status
+    });
+
+    // Log audit trail
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+      action: 'Appointment rescheduled',
+      old_date: oldDate,
+      new_date: newDate,
+      reason,
+      rescheduled_by
+    });
+
+    // Notify patient if requested
+    if (notify_patient) {
+      try {
+        const patient = await User.findByPk(appointment.patient_id!);
+        const doctor = await User.findByPk(appointment.doctor_id!);
+        const branch = await Branch.findByPk(appointment.branch_id!);
+
+        if (patient?.email) {
+          await sendEmail({
+            to: patient.email,
+            subject: 'Appointment Rescheduled',
+            template: emailTemplates.APPOINTMENT_RESCHEDULED,
+            data: {
+              patientName: patient.full_name,
+              doctorName: doctor?.full_name || 'your doctor',
+              branchName: branch?.branch_name || 'our clinic',
+              oldDate: oldDate?.toLocaleString(),
+              newDate: newDate.toLocaleString(),
+              reason: reason || 'No reason provided'
+            }
+          });
+        }
+
+        if (patient?.phone) {
+          await sendSMS({
+            to: patient.phone,
+            message: smsTemplates.appointmentRescheduled(
+              patient.full_name,
+              newDate.toLocaleString(),
+              doctor?.full_name || 'your doctor'
+            )
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send rescheduling notification:', notificationError);
+        // Don't fail the rescheduling if notification fails
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Appointment rescheduled successfully',
+      appointment: updatedAppointment,
+      old_date: oldDate,
+      new_date: newDate
+    });
+
+  } catch (error) {
+    console.error('Error rescheduling appointment:', error);
+    res.status(500).json({ error: 'Failed to reschedule appointment' });
+  }
+};
+
+export const getRescheduleHistory = async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+
+    // Get audit logs for rescheduling events
+    const AuditLog = require('../models/audit_log.model').default;
+    
+    const rescheduleHistory = await AuditLog.findAll({
+      where: {
+        table_name: 'Appointment',
+        record_id: appointmentId,
+        action: 'UPDATE',
+        details: {
+          [require('sequelize').Op.like]: '%rescheduled%'
+        }
+      },
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: User,
+          as: 'User',
+          attributes: ['user_id', 'full_name', 'email']
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: rescheduleHistory
+    });
+
+  } catch (error) {
+    console.error('Error fetching reschedule history:', error);
+    res.status(500).json({ error: 'Failed to fetch reschedule history' });
+  }
+};
+
+export const bulkRescheduleAppointments = async (req: Request, res: Response) => {
+  try {
+    const { appointment_ids, new_appointment_date, reason } = req.body;
+    const rescheduled_by = (req as any).user?.user_id;
+
+    if (!appointment_ids || !Array.isArray(appointment_ids) || appointment_ids.length === 0) {
+      return res.status(400).json({ error: 'Appointment IDs array is required' });
+    }
+
+    if (!new_appointment_date) {
+      return res.status(400).json({ error: 'New appointment date is required' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const appointmentId of appointment_ids) {
+      try {
+        const appointment = await Appointment.findByPk(appointmentId);
+        if (!appointment) {
+          errors.push({ appointmentId, error: 'Appointment not found' });
+          continue;
+        }
+
+        // Check if appointment can be rescheduled
+        if (appointment.status === 'Completed' || appointment.status === 'Cancelled') {
+          errors.push({ appointmentId, error: 'Cannot reschedule completed or cancelled appointment' });
+          continue;
+        }
+
+        // Check for conflicts
+        const newDate = new Date(new_appointment_date);
+        const hasConflict = await hasConflictingAppointment(
+          appointment.doctor_id!,
+          newDate,
+          appointmentId
+        );
+
+        if (hasConflict) {
+          errors.push({ appointmentId, error: 'Doctor has conflicting appointment' });
+          continue;
+        }
+
+        // Update appointment
+        const updatedAppointment = await appointment.update({
+          appointment_date: newDate,
+          reason: reason ? `${appointment.reason}\n\nBulk Rescheduled: ${reason}` : appointment.reason,
+          status: 'Scheduled'
+        });
+
+        // Log audit trail
+        await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+          action: 'Bulk appointment rescheduled',
+          old_date: appointment.appointment_date,
+          new_date: newDate,
+          reason,
+          rescheduled_by
+        });
+
+        results.push({
+          appointmentId,
+          success: true,
+          appointment: updatedAppointment
+        });
+
+      } catch (error) {
+        errors.push({ appointmentId, error: error.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Processed ${appointment_ids.length} appointments`,
+      results,
+      errors,
+      summary: {
+        total: appointment_ids.length,
+        successful: results.length,
+        failed: errors.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in bulk rescheduling:', error);
+    res.status(500).json({ error: 'Failed to bulk reschedule appointments' });
   }
 };

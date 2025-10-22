@@ -274,7 +274,7 @@ export default function PatientLogin() {
                       WebkitTextFillColor: 'transparent',
                     }}
                   >
-                    CATMS
+                    MedSync
                   </Typography>
                   <Typography variant="body2" color="text.secondary" fontWeight={500}>
                     Patient Portal
@@ -653,6 +653,66 @@ export default function PatientLogin() {
               >
                 ← Back to Main Site
               </Button>
+            </Box>
+
+            {/* Portal Test Credentials */}
+            <Box sx={{ 
+              mt: 4, 
+              p: 3, 
+              backgroundColor: isDark ? alpha('#1E293B', 0.3) : alpha(theme.palette.grey[100], 0.8),
+              borderRadius: 2,
+              border: isDark ? `1px solid ${alpha('#3B82F6', 0.3)}` : `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+              backdropFilter: 'blur(10px)',
+            }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                gutterBottom
+                sx={{
+                  color: isDark ? alpha('#E2E8F0', 0.7) : undefined,
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}
+              >
+                Portal Test Credentials:
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontFamily: 'monospace', 
+                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
+                    backgroundColor: isDark ? alpha('#0F172A', 0.5) : alpha(theme.palette.grey[200], 0.8),
+                    padding: { xs: '8px 12px', sm: '10px 16px' },
+                    borderRadius: 1,
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    wordBreak: 'break-all',
+                    textAlign: 'center',
+                    border: isDark ? `1px solid ${alpha('#3B82F6', 0.2)}` : `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                  }}
+                >
+                  kusal@gmail.com / kusal123
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    fontFamily: 'monospace',
+                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
+                    backgroundColor: isDark ? alpha('#0F172A', 0.5) : alpha(theme.palette.grey[200], 0.8),
+                    padding: { xs: '8px 12px', sm: '10px 16px' },
+                    borderRadius: 1,
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    wordBreak: 'break-all',
+                    textAlign: 'center',
+                    border: isDark ? `1px solid ${alpha('#3B82F6', 0.2)}` : `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                  }}
+                >
+                  test@example.com / password<br/>
+                  kusal@gmail.com / password<br/>
+                  patient@medsync.lk / patient123
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </CardContent>

@@ -7,7 +7,13 @@ import {
   updateAppointment,
   cancelAppointment,
   approveAppointment,
-  rejectAppointment
+  rejectAppointment,
+  createEmergencyWalkIn,
+  getEmergencyAppointments,
+  updateEmergencyAppointmentStatus,
+  rescheduleAppointment,
+  getRescheduleHistory,
+  bulkRescheduleAppointments
 } from "../controllers/appointment.controller";
 import { authenticateToken } from "../auth/auth.middleware";
 import { authorizeRoles } from "../middlewares/role.middleware";
@@ -26,5 +32,19 @@ router.put("/:id", authorizeRoles("Receptionist", "System Administrator"), updat
 router.delete("/:id", authorizeRoles("Receptionist", "System Administrator"), cancelAppointment);
 router.patch("/:id/approve", authorizeRoles("Receptionist", "System Administrator"), approveAppointment);
 router.patch("/:id/reject", authorizeRoles("Receptionist", "System Administrator"), rejectAppointment);
+
+// ===== PHASE 4: EMERGENCY WALK-IN APPOINTMENTS =====
+
+// Emergency walk-in routes
+router.post("/emergency", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), createEmergencyWalkIn);
+router.get("/emergency/list", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getEmergencyAppointments);
+router.patch("/emergency/:appointmentId/status", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), updateEmergencyAppointmentStatus);
+
+// ===== PHASE 4: APPOINTMENT RESCHEDULING =====
+
+// Rescheduling routes
+router.patch("/:appointmentId/reschedule", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), rescheduleAppointment);
+router.get("/:appointmentId/reschedule-history", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), getRescheduleHistory);
+router.post("/bulk-reschedule", authorizeRoles("System Administrator", "Branch Manager"), bulkRescheduleAppointments);
 
 export default router;

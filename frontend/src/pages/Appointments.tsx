@@ -25,6 +25,12 @@ import {
   Select,
   MenuItem,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,6 +42,7 @@ import {
   Edit as EditIcon,
   Cancel as CancelIcon,
   Refresh as RefreshIcon,
+  Schedule as RescheduleIcon,
 } from '@mui/icons-material';
 
 interface Appointment {
@@ -56,6 +63,13 @@ export default function Appointments() {
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [rescheduleData, setRescheduleData] = useState({
+    new_appointment_date: '',
+    reason: '',
+    notify_patient: true
+  });
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -96,6 +110,32 @@ export default function Appointments() {
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to reject appointment');
     }
+  };
+
+  const rescheduleAppointment = async (appointmentId: number) => {
+    try {
+      await api.patch(`/api/appointments/${appointmentId}/reschedule`, rescheduleData);
+      setShowRescheduleDialog(false);
+      setSelectedAppointment(null);
+      setRescheduleData({
+        new_appointment_date: '',
+        reason: '',
+        notify_patient: true
+      });
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to reschedule appointment');
+    }
+  };
+
+  const openRescheduleDialog = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setRescheduleData({
+      new_appointment_date: '',
+      reason: '',
+      notify_patient: true
+    });
+    setShowRescheduleDialog(true);
   };
 
   const filteredAppointments = appointments
@@ -383,6 +423,17 @@ export default function Appointments() {
                         <ViewIcon />
                       </IconButton>
                       {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
+                        <Tooltip title="Reschedule Appointment">
+                          <IconButton 
+                            size="small" 
+                            color="warning"
+                            onClick={() => openRescheduleDialog(appointment)}
+                          >
+                            <RescheduleIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
                         <IconButton size="small" color="secondary">
                           <EditIcon />
                         </IconButton>
@@ -429,6 +480,87 @@ export default function Appointments() {
         onClose={() => setBookingModalOpen(false)}
         onSuccess={handleBookingSuccess}
       />
+
+      {/* Reschedule Dialog */}
+      <Dialog
+        open={showRescheduleDialog}
+        onClose={() => {
+          setShowRescheduleDialog(false);
+          setSelectedAppointment(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Reschedule Appointment
+        </DialogTitle>
+        <DialogContent>
+          {selectedAppointment && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Current Appointment Details:
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Patient ID: {selectedAppointment.patient_id}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Date: {formatDateTime(selectedAppointment.appointment_date)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Status: {selectedAppointment.status}
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="New Appointment Date & Time"
+              type="datetime-local"
+              value={rescheduleData.new_appointment_date}
+              onChange={(e) => setRescheduleData(prev => ({ ...prev, new_appointment_date: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Reason for Rescheduling"
+              value={rescheduleData.reason}
+              onChange={(e) => setRescheduleData(prev => ({ ...prev, reason: e.target.value }))}
+              multiline
+              rows={3}
+              placeholder="Enter reason for rescheduling..."
+            />
+            <FormControl>
+              <InputLabel>Notify Patient</InputLabel>
+              <Select
+                value={rescheduleData.notify_patient}
+                onChange={(e) => setRescheduleData(prev => ({ ...prev, notify_patient: e.target.value === 'true' }))}
+                label="Notify Patient"
+              >
+                <MenuItem value="true">Yes, notify patient</MenuItem>
+                <MenuItem value="false">No, don't notify patient</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowRescheduleDialog(false);
+              setSelectedAppointment(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => selectedAppointment && rescheduleAppointment(selectedAppointment.appointment_id)}
+            variant="contained"
+            disabled={!rescheduleData.new_appointment_date}
+          >
+            Reschedule Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

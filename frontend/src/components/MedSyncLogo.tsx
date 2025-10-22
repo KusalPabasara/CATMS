@@ -1,14 +1,14 @@
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
-interface MargaLogoProps {
+interface MedSyncLogoProps {
   size?: 'small' | 'medium' | 'large';
   showText?: boolean;
   variant?: 'horizontal' | 'vertical' | 'icon-only';
   className?: string;
 }
 
-const MargaLogo: React.FC<MargaLogoProps> = ({ 
+const MedSyncLogo: React.FC<MedSyncLogoProps> = ({ 
   size = 'medium', 
   showText = true, 
   variant = 'horizontal',
@@ -30,7 +30,7 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
       height={iconSize} 
       viewBox="0 0 280 280" 
       role="img" 
-      aria-label="Marga.lk logo"
+      aria-label="MedSync logo"
       className={className}
     >
       <defs>
@@ -125,7 +125,7 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
                 lineHeight: 1
               }}
             >
-              Marga.lk
+              MedSync
             </Typography>
             <Typography 
               variant="body2" 
@@ -137,7 +137,7 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
                 lineHeight: 1
               }}
             >
-              Digital Health Pathways
+              Multi-Specialty Clinic Management
             </Typography>
           </Box>
         )}
@@ -161,7 +161,7 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
               lineHeight: 1
             }}
           >
-            Marga.lk
+            MedSync
           </Typography>
           <Typography 
             variant="body2" 
@@ -173,7 +173,7 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
               lineHeight: 1
             }}
           >
-            Digital Health Pathways
+            Multi-Specialty Clinic Management
           </Typography>
         </Box>
       )}
@@ -181,4 +181,4 @@ const MargaLogo: React.FC<MargaLogoProps> = ({
   );
 };
 
-export default MargaLogo;
+export default MedSyncLogo;

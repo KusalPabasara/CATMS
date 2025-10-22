@@ -13,7 +13,10 @@ interface PatientAttributes {
   phone?: string;
   email: string;
   password_hash?: string;
+  last_login?: Date;
+  is_active: boolean;
   address?: string;
+  preferred_branch_id?: number;
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
@@ -37,7 +40,10 @@ class Patient extends Model<PatientAttributes, PatientAttributes> {
   public phone?: string;
   public email!: string;
   public password_hash?: string;
+  public last_login?: Date;
+  public is_active!: boolean;
   public address?: string;
+  public preferred_branch_id?: number;
   public emergency_contact?: string;
   public emergency_contact_name?: string;
   public emergency_contact_phone?: string;
@@ -60,8 +66,11 @@ Patient.init({
   blood_type: DataTypes.STRING(3),
   phone: DataTypes.STRING,
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
-  password_hash: { type: DataTypes.STRING },
+  password_hash: { type: DataTypes.STRING(255), allowNull: true },
+  last_login: { type: DataTypes.DATE, allowNull: true },
+  is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
   address: DataTypes.TEXT,
+  preferred_branch_id: { type: DataTypes.INTEGER, allowNull: true },
   emergency_contact: DataTypes.STRING(10),
   emergency_contact_name: DataTypes.STRING,
   emergency_contact_phone: DataTypes.STRING,
@@ -74,7 +83,8 @@ Patient.init({
 }, {
   sequelize,
   modelName: 'Patient',
-  tableName: 'patients'
+  tableName: 'patients',
+  timestamps: false
 });
 
 export { Patient };

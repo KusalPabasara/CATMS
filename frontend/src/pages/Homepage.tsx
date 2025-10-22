@@ -36,7 +36,7 @@ import {
   VerifiedUser
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import MargaLogo from '../components/MargaLogo';
+import MedSyncLogo from '../components/MedSyncLogo';
 
 // Animated Background Component
 const AnimatedMedicalBackground = () => {
@@ -259,7 +259,7 @@ const Homepage = () => {
 
   const testimonials = [
     {
-      text: "The CATMS system made managing my appointments so much easier. The doctors are professional and caring.",
+      text: "The MedSync system made managing my appointments so much easier. The doctors are professional and caring.",
       author: "Maria Santos",
       role: "Patient",
       rating: 5
@@ -297,7 +297,7 @@ const Homepage = () => {
       >
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <MargaLogo size="medium" variant="horizontal" />
+            <MedSyncLogo size="medium" variant="horizontal" />
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <Button 
@@ -359,7 +359,7 @@ const Homepage = () => {
                     lineHeight: 1.2
                   }}
                 >
-                  Revolutionize Healthcare with Marga.lk
+                  Revolutionize Healthcare with MedSync
                 </Typography>
                 <Typography 
                   variant="h5" 
@@ -579,7 +579,7 @@ const Homepage = () => {
         </Container>
       </Box>
 
-      {/* Why CATMS Section */}
+      {/* Why MedSync Section */}
       <Box 
         sx={{ 
           py: 8, 
@@ -592,7 +592,7 @@ const Homepage = () => {
             <Box>
               <Box sx={{ mb: 4 }}>
                 <Chip 
-                  label="Why Marga.lk" 
+                  label="Why MedSync" 
                   color="primary" 
                   sx={{ mb: 2, fontWeight: 'bold' }}
                 />
@@ -616,7 +616,7 @@ const Homepage = () => {
                   <Card sx={{ background: alpha(theme.palette.success.main, 0.05) }}>
                     <CardContent sx={{ p: 2 }}>
                       <Typography variant="body2" color="success.main">
-                        Marga.lk revolutionizes patient participation by bringing trials to homes, 
+                        MedSync revolutionizes patient participation by bringing trials to homes, 
                         overcoming geographical limitations, enabling telemedicine consultations, 
                         remote data provision, and fostering a more inclusive and efficient 
                         environment for clinical research.
@@ -740,7 +740,7 @@ const Homepage = () => {
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h3" fontWeight="bold" gutterBottom>
-              1 Million Happy Patients Healthier with Marga.lk
+              1 Million Happy Patients Healthier with MedSync
             </Typography>
             <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
               Community of 1 Million Patients Embracing Health and Well-being
@@ -784,7 +784,7 @@ const Homepage = () => {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3,1fr)' }, gap: 4 }}>
             <Box>
               <Box sx={{ mb: 2 }}>
-                <MargaLogo size="small" variant="horizontal" />
+                <MedSyncLogo size="small" variant="horizontal" />
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Your health, our priority. A compassionate team of specialists dedicated to providing 
@@ -841,7 +841,7 @@ const Homepage = () => {
           
           <Box sx={{ mt: 4, pt: 4, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
-              © {new Date().getFullYear()} Marga.lk - Digital Health Pathways. All rights reserved.
+              © {new Date().getFullYear()} MedSync - Multi-Specialty Clinic Management. All rights reserved.
             </Typography>
           </Box>
         </Container>

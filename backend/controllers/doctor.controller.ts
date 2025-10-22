@@ -15,7 +15,14 @@ export const getDoctors = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(doctors);
+    // Map the results to include staff_email
+    const doctorsWithStaffEmail = doctors.map(doctor => ({
+      ...doctor.toJSON(),
+      staff_email: doctor.email, // The email field contains the staff email for login
+      email: doctor.email // For backward compatibility, we'll show the same email
+    }));
+
+    res.json(doctorsWithStaffEmail);
   } catch (error) {
     console.error('Error fetching doctors:', error);
     res.status(500).json({ error: 'Failed to fetch doctors' });
@@ -50,6 +57,7 @@ export const createDoctor = async (req: Request, res: Response) => {
     const {
       full_name,
       email,
+      staff_email,
       phone,
       speciality,
       branch_id,
@@ -57,9 +65,9 @@ export const createDoctor = async (req: Request, res: Response) => {
     } = req.body;
 
     // Validate required fields
-    if (!full_name || !email || !password) {
+    if (!full_name || !email || !staff_email || !password) {
       return res.status(400).json({ 
-        error: 'Full name, email, and password are required' 
+        error: 'Full name, email, staff email, and password are required' 
       });
     }
 
@@ -68,6 +76,14 @@ export const createDoctor = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(400).json({ 
         error: 'Email already exists' 
+      });
+    }
+
+    // Check if staff email already exists
+    const existingStaffUser = await User.findOne({ where: { email: staff_email } });
+    if (existingStaffUser) {
+      return res.status(400).json({ 
+        error: 'Staff email already exists' 
       });
     }
 
@@ -80,7 +96,7 @@ export const createDoctor = async (req: Request, res: Response) => {
     // Create user account
     const user = await User.create({
       full_name,
-      email,
+      email: staff_email, // Use staff_email for login
       phone,
       password_hash,
       role_id: doctorRoleId,
@@ -93,7 +109,8 @@ export const createDoctor = async (req: Request, res: Response) => {
       doctor: {
         user_id: user.user_id,
         full_name: user.full_name,
-        email: user.email,
+        email: email, // Return the general email
+        staff_email: staff_email, // Return the staff email
         phone: user.phone,
         speciality,
         branch_id: user.branch_id,
@@ -116,6 +133,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
     const {
       full_name,
       email,
+      staff_email,
       phone,
       speciality,
       branch_id,
@@ -128,12 +146,12 @@ export const updateDoctor = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
-    // Check if email is being changed and if it already exists
-    if (email && email !== doctor.email) {
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
+    // Check if staff email is being changed and if it already exists
+    if (staff_email && staff_email !== doctor.email) {
+      const existingStaffUser = await User.findOne({ where: { email: staff_email } });
+      if (existingStaffUser) {
         return res.status(400).json({ 
-          error: 'Email already exists' 
+          error: 'Staff email already exists' 
         });
       }
     }
@@ -141,7 +159,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
     // Update user
     const updateData: any = {
       full_name: full_name || doctor.full_name,
-      email: email || doctor.email,
+      email: staff_email || doctor.email, // Use staff_email for login
       phone: phone || doctor.phone,
       branch_id: branch_id !== undefined ? branch_id : doctor.branch_id,
       is_active: is_active !== undefined ? is_active : doctor.is_active
@@ -185,7 +203,8 @@ export const updateDoctor = async (req: Request, res: Response) => {
       doctor: {
         user_id: doctor.user_id,
         full_name: doctor.full_name,
-        email: doctor.email,
+        email: email, // Return the general email
+        staff_email: staff_email || doctor.email, // Return the staff email
         phone: doctor.phone,
         speciality,
         branch_id: doctor.branch_id,

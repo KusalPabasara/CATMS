@@ -8,9 +8,10 @@ import { authorizeRoles } from "../middlewares/role.middleware";
 
 const router = Router();
 
-router.use(authenticateToken); // All routes secured
+// Public route for login page to fetch branches
+router.get("/", getAllBranches);
 
-router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getAllBranches);
-router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getBranchById);
+// Protected routes
+router.get("/:id", authenticateToken, authorizeRoles("Doctor", "Receptionist", "System Administrator"), getBranchById);
 
 export default router;

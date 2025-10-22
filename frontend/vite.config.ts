@@ -15,4 +15,13 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: false,
+  },
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+  },
+  esbuild: {
+    sourcemap: false,
+  },
 })
