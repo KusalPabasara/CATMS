@@ -51,7 +51,7 @@ interface Appointment {
   appointment_date: string;
   status: string;
   reason: string;
-  priority: string;
+  priority?: string;
   notes?: string;
   doctor?: {
     full_name: string;
@@ -143,7 +143,8 @@ export default function AppointmentHistory() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority?: string) => {
+    if (!priority) return 'default';
     switch (priority.toLowerCase()) {
       case 'urgent': return 'error';
       case 'high': return 'warning';
@@ -269,20 +270,22 @@ export default function AppointmentHistory() {
         
         <Box display="flex" gap={2} alignItems="center">
           <Tooltip title="Refresh">
-            <IconButton
-              onClick={fetchAppointments}
-              disabled={loading}
-              sx={{
-                color: 'primary.main',
-                '&:hover': {
-                  backgroundColor: isDark 
-                    ? alpha(theme.palette.primary.main, 0.1) 
-                    : alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton
+                onClick={fetchAppointments}
+                disabled={loading}
+                sx={{
+                  color: 'primary.main',
+                  '&:hover': {
+                    backgroundColor: isDark 
+                      ? alpha(theme.palette.primary.main, 0.1) 
+                      : alpha(theme.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
           
           <Button
@@ -308,19 +311,21 @@ export default function AppointmentHistory() {
           </Button>
           
           <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            <IconButton
-              onClick={toggleTheme}
-              sx={{
-                color: isDark ? 'warning.main' : 'info.main',
-                '&:hover': {
-                  backgroundColor: isDark 
-                    ? alpha(theme.palette.warning.main, 0.1) 
-                    : alpha(theme.palette.info.main, 0.1),
-                },
-              }}
-            >
-              {isDark ? <LightModeIcon /> : <DarkModeIcon />}
-            </IconButton>
+            <span>
+              <IconButton
+                onClick={toggleTheme}
+                sx={{
+                  color: isDark ? 'warning.main' : 'info.main',
+                  '&:hover': {
+                    backgroundColor: isDark 
+                      ? alpha(theme.palette.warning.main, 0.1) 
+                      : alpha(theme.palette.info.main, 0.1),
+                  },
+                }}
+              >
+                {isDark ? <LightModeIcon /> : <DarkModeIcon />}
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>
@@ -444,7 +449,7 @@ interface AppointmentTableProps {
   theme: any;
   getStatusColor: (status: string) => string;
   getStatusIcon: (status: string) => React.ReactNode;
-  getPriorityColor: (priority: string) => string;
+  getPriorityColor: (priority?: string) => string;
   formatAppointmentDate: (dateString: string) => { date: string; time: string; full: string };
 }
 
@@ -596,7 +601,7 @@ function AppointmentTable({
                 </TableCell>
                 <TableCell>
                   <Chip
-                    icon={getStatusIcon(appointment.status)}
+                    icon={getStatusIcon(appointment.status) as React.ReactElement}
                     label={appointment.status}
                     color={getStatusColor(appointment.status) as any}
                     size="small"
@@ -605,7 +610,7 @@ function AppointmentTable({
                 </TableCell>
                 <TableCell>
                   <Chip
-                    label={appointment.priority}
+                    label={appointment.priority || 'Normal'}
                     color={getPriorityColor(appointment.priority) as any}
                     size="small"
                     variant="outlined"

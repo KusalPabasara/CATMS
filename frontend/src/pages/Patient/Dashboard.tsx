@@ -58,18 +58,31 @@ export default function PatientDashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     console.log('🏠 Dashboard: Patient data changed:', patient);
     // Handle nested patient structure
-    const currentPatient = patient?.patient || patient;
+    const currentPatient = patient;
     console.log('🏠 Dashboard: Current patient:', currentPatient);
     console.log('🏠 Dashboard: Profile picture URL:', currentPatient?.profile_picture);
+    
+    // Debug profile picture URL construction
+    if (currentPatient?.profile_picture) {
+      const finalUrl = currentPatient.profile_picture.startsWith('http') ? 
+        currentPatient.profile_picture : 
+        `http://localhost:5000${currentPatient.profile_picture}`;
+      console.log('🏠 Dashboard: Final profile picture URL:', finalUrl);
+    }
+    
     if (!currentPatient) {
       navigate('/patient/login');
       return;
     }
-    
+
+    // Reset image error state when patient data changes (new profile picture uploaded)
+    setImageError(false);
+
     fetchAppointments();
   }, [patient, navigate]);
 
@@ -118,7 +131,7 @@ export default function PatientDashboard() {
   ).slice(0, 3);
 
   // Handle nested patient structure
-  const currentPatient = patient?.patient || patient;
+  const currentPatient = patient;
   
   if (!currentPatient) {
     return (
@@ -161,28 +174,44 @@ export default function PatientDashboard() {
         }}
       >
         <Box display="flex" alignItems="center">
-          <Avatar 
-            src={currentPatient?.profile_picture || undefined}
-            sx={{ 
-              width: 64, 
-              height: 64, 
-              mr: 3, 
-              background: currentPatient?.profile_picture 
-                ? undefined 
+          <Avatar
+            key={currentPatient?.profile_picture} // Force re-render when profile picture changes
+            src={currentPatient?.profile_picture ? 
+              (currentPatient.profile_picture.startsWith('http') ? 
+                currentPatient.profile_picture : 
+                `http://localhost:5000${currentPatient.profile_picture}`) : 
+              undefined}
+            sx={{
+              width: 64,
+              height: 64,
+              mr: 3,
+              background: currentPatient?.profile_picture && !imageError
+                ? undefined
                 : isDark
                 ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
                 : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
               fontSize: '1.5rem',
               fontWeight: 'bold',
-              color: currentPatient?.profile_picture ? undefined : 'white',
+              color: currentPatient?.profile_picture && !imageError ? undefined : 'white',
               boxShadow: isDark
                 ? '0 8px 32px rgba(59, 130, 246, 0.3)'
                 : '0 8px 32px rgba(30, 64, 175, 0.3)',
             }}
-            onLoad={() => console.log('🏠 Dashboard: Avatar image loaded successfully')}
-            onError={(e) => console.log('🏠 Dashboard: Avatar image failed to load:', e)}
+            onLoad={() => {
+              console.log('🏠 Dashboard: Avatar image loaded successfully');
+              setImageError(false);
+            }}
+            onError={(e) => {
+              console.log('🏠 Dashboard: Avatar image failed to load, using fallback:', e);
+              console.log('🏠 Dashboard: Failed URL was:', currentPatient?.profile_picture ? 
+                (currentPatient.profile_picture.startsWith('http') ? 
+                  currentPatient.profile_picture : 
+                  `http://localhost:5000${currentPatient.profile_picture}`) : 
+                'No URL');
+              setImageError(true);
+            }}
           >
-            {!currentPatient?.profile_picture && (currentPatient?.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'P')}
+            {(!currentPatient?.profile_picture || imageError) && (currentPatient?.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'P')}
           </Avatar>
           <Box>
             <Typography 
@@ -496,21 +525,21 @@ export default function PatientDashboard() {
             <Box display="flex" justifyContent="center" py={4}>
               <CircularProgress />
             </Box>
-          ) : upcomingAppointments.length === 0 ? (
+          ) : appointments.length === 0 ? (
             <Box textAlign="center" py={4}>
-              <ScheduleIcon 
-                sx={{ 
-                  fontSize: 64, 
-                  color: 'text.disabled', 
+              <ScheduleIcon
+                sx={{
+                  fontSize: 64,
+                  color: 'text.disabled',
                   mb: 2,
                   filter: isDark ? 'drop-shadow(0 0 8px rgba(156, 163, 175, 0.3))' : undefined,
-                }} 
+                }}
               />
               <Typography variant="h6" color="text.secondary" mb={1}>
-                No Upcoming Appointments
+                No Appointments Yet
               </Typography>
               <Typography variant="body2" color="text.secondary" mb={3}>
-                Book your next appointment to get started
+                Book your first appointment to get started with your healthcare journey
               </Typography>
               <Button
                 variant="contained"
@@ -531,7 +560,45 @@ export default function PatientDashboard() {
                   },
                 }}
               >
-                Book Appointment
+                Book Your First Appointment
+              </Button>
+            </Box>
+          ) : upcomingAppointments.length === 0 ? (
+            <Box textAlign="center" py={4}>
+              <ScheduleIcon
+                sx={{
+                  fontSize: 64,
+                  color: 'text.disabled',
+                  mb: 2,
+                  filter: isDark ? 'drop-shadow(0 0 8px rgba(156, 163, 175, 0.3))' : undefined,
+                }}
+              />
+              <Typography variant="h6" color="text.secondary" mb={1}>
+                No Upcoming Appointments
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                All your appointments are completed. Book your next appointment.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/patient/book-appointment')}
+                sx={{
+                  background: isDark
+                    ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
+                    : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
+                  boxShadow: isDark
+                    ? '0 4px 16px rgba(59, 130, 246, 0.3)'
+                    : '0 4px 16px rgba(30, 64, 175, 0.3)',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: isDark
+                      ? '0 6px 20px rgba(59, 130, 246, 0.4)'
+                      : '0 6px 20px rgba(30, 64, 175, 0.4)',
+                  },
+                }}
+              >
+                Book Next Appointment
               </Button>
             </Box>
           ) : (

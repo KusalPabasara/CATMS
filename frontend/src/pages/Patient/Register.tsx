@@ -17,6 +17,7 @@ import {
   InputLabel,
   Select,
   Divider,
+  useTheme,
 } from '@mui/material';
 import {
   Visibility,
@@ -30,7 +31,9 @@ import {
   Badge as BadgeIcon,
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
+import MedSyncLogo from '../../components/MedSyncLogo';
 export default function PatientRegister() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,7 +50,8 @@ export default function PatientRegister() {
     national_id: '',
     dob: '',
     gender: '',
-    address: ''
+    address: '',
+    preferred_branch_id: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +94,8 @@ export default function PatientRegister() {
         national_id: formData.national_id,
         dob: formData.dob || null,
         gender: formData.gender || null,
-        address: formData.address
+        address: formData.address,
+        preferred_branch_id: formData.preferred_branch_id || null
       };
 
       const response = await api.post('/api/patient-auth/register', registrationData);
@@ -108,7 +113,8 @@ export default function PatientRegister() {
           national_id: '',
           dob: '',
           gender: '',
-          address: ''
+          address: '',
+          preferred_branch_id: ''
         });
         
         // Redirect to login page after a short delay
@@ -138,9 +144,37 @@ export default function PatientRegister() {
       justifyContent="center"
       sx={{
         background: (theme) => theme.palette.mode === 'dark' 
-          ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        p: 2,
+          ? 'linear-gradient(135deg, #0A0E1A 0%, #1E293B 50%, #0F172A 100%)'
+          : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f8fafc 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 3, md: 4 },
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          background: (theme).palette.mode === 'dark'
+            ? 'radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%)',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          backgroundImage: (theme).palette.mode === 'dark'
+            ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%233B82F6" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+            : 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23059669" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          opacity: 0.4,
+        },
       }}
     >
       <Card sx={{ 
@@ -152,22 +186,14 @@ export default function PatientRegister() {
       }}>
         <CardContent sx={{ p: 4 }}>
           <Box display="flex" alignItems="center" justifyContent="center" mb={4}>
-            <HospitalIcon sx={{ fontSize: 48, mr: 2, color: 'primary.main' }} />
-            <Box>
-              <Typography variant="h4" component="h1" fontWeight="bold" color="primary">
-                CATMS
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Patient Registration
-              </Typography>
-            </Box>
+            <MedSyncLogo size="large" variant="horizontal" />
           </Box>
 
           <Typography variant="h5" component="h2" textAlign="center" mb={1} fontWeight="bold">
             Create Your Account
           </Typography>
           <Typography variant="body2" textAlign="center" color="text.secondary" mb={4}>
-            Join CATMS to book appointments and manage your health records online
+            Join MedSync to book appointments and manage your health records online
           </Typography>
 
           {(error || success) && (
@@ -235,6 +261,34 @@ export default function PatientRegister() {
                         <CalendarIcon color="action" />
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#9ca3af',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#6b7280',
+                      '&.Mui-focused': {
+                        color: '#3b82f6',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      color: '#000000',
+                      '&::-webkit-calendar-picker-indicator': {
+                        filter: 'invert(0)',
+                        opacity: 1,
+                      },
+                    },
                   }}
                 />
 
@@ -307,6 +361,34 @@ export default function PatientRegister() {
                   ),
                 }}
               />
+
+              {/* Branch Selection */}
+              <Box>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
+                  Preferred Branch
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Box>
+
+              <FormControl fullWidth>
+                <InputLabel>Select Your Preferred Branch</InputLabel>
+                <Select
+                  value={formData.preferred_branch_id}
+                  onChange={(e) => handleInputChange('preferred_branch_id', e.target.value)}
+                  label="Select Your Preferred Branch"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <HospitalIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                >
+                  <MenuItem value="1">Colombo Branch - Colombo, Sri Lanka</MenuItem>
+                  <MenuItem value="2">Galle Branch - Galle, Sri Lanka</MenuItem>
+                  <MenuItem value="3">Kandy Branch - Kandy, Sri Lanka</MenuItem>
+                </Select>
+              </FormControl>
 
               {/* Account Security */}
               <Box>

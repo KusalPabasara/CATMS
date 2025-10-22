@@ -11,6 +11,7 @@ interface UserAttributes {
   email: string;
   phone?: string;
   password_hash: string;
+  staff_title?: string;
   is_active: boolean;
   created_at: Date;
   last_login?: Date;
@@ -28,6 +29,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public email!: string;
   public phone?: string;
   public password_hash!: string;
+  public staff_title?: string;
   public is_active!: boolean;
   public created_at!: Date;
   public last_login?: Date;
@@ -55,6 +57,7 @@ User.init({
   email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
   phone: DataTypes.STRING,
   password_hash: { type: DataTypes.STRING, allowNull: false },
+  staff_title: DataTypes.STRING(100),
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   last_login: DataTypes.DATE,

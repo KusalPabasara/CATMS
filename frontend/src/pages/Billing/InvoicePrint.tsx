@@ -37,7 +37,7 @@ const InvoicePrint = forwardRef<HTMLDivElement, InvoicePrintProps>(
       >
         {/* Header */}
         <div className="text-center mb-8 print:mb-6">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">🏥 CATMS Clinic</h1>
+          <h1 className="text-3xl font-bold text-blue-600 mb-2">🏥 MedSync Clinic</h1>
           <p className="text-lg text-gray-600">Clinic Appointment & Treatment Management System</p>
           <p className="text-sm text-gray-500">Professional Healthcare Services</p>
         </div>
@@ -152,7 +152,7 @@ const InvoicePrint = forwardRef<HTMLDivElement, InvoicePrintProps>(
         {/* Footer */}
         <div className="border-t border-gray-200 pt-6 text-center">
           <p className="text-sm text-gray-600 mb-2">
-            Thank you for choosing CATMS Clinic for your healthcare needs
+            Thank you for choosing MedSync Clinic for your healthcare needs
           </p>
           <p className="text-xs text-gray-500">
             This is a computer-generated invoice. No signature required.

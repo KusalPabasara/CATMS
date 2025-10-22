@@ -26,9 +26,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-      args:
-        - NODE_ENV=development
+      dockerfile: Dockerfile.dev
     container_name: catms-backend-dev
     environment:
       - NODE_ENV=development
@@ -39,34 +37,25 @@ services:
       - DB_PASSWORD=catms_password
     ports:
       - "5000:5000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/uploads:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - catms-network
-    command: npm run dev
 
   # Frontend (Development)
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: catms-frontend-dev
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:5000
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - catms-network
-    command: npm run dev
 
 volumes:
   mysql_data:

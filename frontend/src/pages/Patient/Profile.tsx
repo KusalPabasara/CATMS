@@ -16,7 +16,6 @@ import {
   Avatar,
   Divider,
 } from '@mui/material';
-import { Grid } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
@@ -51,10 +50,9 @@ interface PatientData {
   gender: string;
   address: string;
   emergency_contact: string;
-  emergency_phone: string;
+  emergency_contact_phone: string;
   blood_type: string;
   allergies: string;
-  medical_history: string;
   profile_picture?: string;
   active: boolean;
   created_at: string;
@@ -85,10 +83,11 @@ export default function Profile() {
     gender: '',
     address: '',
     emergency_contact: '',
-    emergency_phone: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
     blood_type: '',
     allergies: '',
-    medical_history: '',
+    profile_picture: '',
   });
 
   useEffect(() => {
@@ -106,13 +105,13 @@ export default function Profile() {
       setPatientData(response.data);
       
       // Check if patient store has profile picture, otherwise use API response
-      const currentPatient = patient?.patient || patient;
+      const currentPatient = patient;
       const storedProfilePicture = currentPatient?.profile_picture;
       const apiProfilePicture = response.data.profile_picture;
       
       // Use stored profile picture if available, otherwise use API response
       const profilePictureUrl = storedProfilePicture || 
-        (apiProfilePicture ? `http://localhost:5001${apiProfilePicture}` : null);
+        (apiProfilePicture ? `http://localhost:5000${apiProfilePicture}` : null);
       
       setProfilePicture(profilePictureUrl);
       setFormData({
@@ -128,6 +127,7 @@ export default function Profile() {
         blood_type: response.data.blood_type || '',
         allergies: response.data.allergies || '',
         medical_history: response.data.medical_history || '',
+        profile_picture: response.data.profile_picture || '',
       });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load profile data');
@@ -205,10 +205,11 @@ export default function Profile() {
         gender: patientData.gender || '',
         address: patientData.address || '',
         emergency_contact: patientData.emergency_contact || '',
-        emergency_phone: patientData.emergency_phone || '',
+        emergency_contact_name: patientData.emergency_contact_name || '',
+        emergency_contact_phone: patientData.emergency_contact_phone || '',
         blood_type: patientData.blood_type || '',
         allergies: patientData.allergies || '',
-        medical_history: patientData.medical_history || '',
+        profile_picture: patientData.profile_picture || '',
       });
     }
   };
@@ -266,7 +267,7 @@ export default function Profile() {
           });
           
           console.log('📸 Upload response:', uploadResponse.data);
-          updateData.profile_picture = `http://localhost:5001${uploadResponse.data.profile_picture}`;
+          updateData.profile_picture = `http://localhost:5000${uploadResponse.data.profile_picture}`;
           console.log('📸 Profile picture URL set:', updateData.profile_picture);
         } catch (uploadErr: any) {
           console.error('❌ Profile picture upload failed:', uploadErr);
@@ -303,7 +304,7 @@ export default function Profile() {
       
       // Update the patient store with the new profile picture
       // Handle nested patient structure
-      const currentPatient = patient?.patient || patient;
+      const currentPatient = patient;
       const updatedPatient = {
         ...currentPatient,
         profile_picture: updateData.profile_picture
@@ -558,9 +559,9 @@ export default function Profile() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
         {/* Profile Overview */}
-        <Grid item xs={12} md={4}>
+        <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
           <Card
             sx={{
               background: isDark 
@@ -640,10 +641,10 @@ export default function Profile() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Profile Form */}
-        <Grid item xs={12} md={8}>
+        <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
           <Card
             sx={{
               background: isDark 
@@ -739,8 +740,8 @@ export default function Profile() {
                 </Box>
               )}
               
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Full Name"
@@ -749,9 +750,9 @@ export default function Profile() {
                     disabled={!isEditing}
                     required
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Email"
@@ -761,9 +762,9 @@ export default function Profile() {
                     disabled={!isEditing}
                     required
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Phone"
@@ -771,9 +772,9 @@ export default function Profile() {
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     disabled={!isEditing}
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="National ID"
@@ -782,9 +783,9 @@ export default function Profile() {
                     disabled={!isEditing}
                     required
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Date of Birth"
@@ -794,9 +795,9 @@ export default function Profile() {
                     disabled={!isEditing}
                     InputLabelProps={{ shrink: true }}
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Gender"
@@ -811,9 +812,9 @@ export default function Profile() {
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </TextField>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12}>
+                <Box sx={{ gridColumn: '1' }}>
                   <TextField
                     fullWidth
                     label="Address"
@@ -823,8 +824,8 @@ export default function Profile() {
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     disabled={!isEditing}
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
 
               <Divider sx={{ my: 4 }} />
 
@@ -833,8 +834,8 @@ export default function Profile() {
                 Emergency Contact
               </Typography>
               
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Emergency Contact Name"
@@ -842,18 +843,18 @@ export default function Profile() {
                     onChange={(e) => handleInputChange('emergency_contact', e.target.value)}
                     disabled={!isEditing}
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Emergency Contact Phone"
-                    value={formData.emergency_phone}
-                    onChange={(e) => handleInputChange('emergency_phone', e.target.value)}
+                    value={formData.emergency_contact_phone}
+                    onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
                     disabled={!isEditing}
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
 
               <Divider sx={{ my: 4 }} />
 
@@ -862,8 +863,8 @@ export default function Profile() {
                 Medical Information
               </Typography>
               
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+                <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                   <TextField
                     fullWidth
                     label="Blood Type"
@@ -883,9 +884,9 @@ export default function Profile() {
                     <option value="O+">O+</option>
                     <option value="O-">O-</option>
                   </TextField>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12}>
+                <Box sx={{ gridColumn: '1' }}>
                   <TextField
                     fullWidth
                     label="Allergies"
@@ -896,9 +897,9 @@ export default function Profile() {
                     disabled={!isEditing}
                     placeholder="List any known allergies (e.g., Penicillin, Latex, etc.)"
                   />
-                </Grid>
+                </Box>
 
-                <Grid item xs={12}>
+                <Box sx={{ gridColumn: '1' }}>
                   <TextField
                     fullWidth
                     label="Medical History"
@@ -909,12 +910,12 @@ export default function Profile() {
                     disabled={!isEditing}
                     placeholder="Describe any relevant medical history, chronic conditions, or ongoing treatments"
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+                </Box>
     </Box>
   );
 }

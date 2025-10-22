@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,10 @@ import {
   alpha,
   Fade,
   Slide,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   LocalHospital as HospitalIcon,
@@ -28,10 +32,15 @@ import {
   Group as GroupIcon,
 } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
+import MedSyncLogo from '../components/MedSyncLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [staffTitle, setStaffTitle] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,22 +50,78 @@ export default function Login() {
   const theme = useTheme();
   const { isDark } = useCustomTheme();
 
+  // Staff titles options
+  const staffTitles = [
+    'Doctor',
+    'Nurse', 
+    'Branch Manager',
+    'Receptionist',
+    'Billing Staff'
+  ];
+
+  // Fetch branches on component mount
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        setBranchesLoading(true);
+        const response = await api.get('/api/branches', {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        setBranches(response.data);
+      } catch (error) {
+        console.error('Failed to fetch branches:', error);
+        // Don't show error to user, just log it
+      } finally {
+        setBranchesLoading(false);
+      }
+    };
+    fetchBranches();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
+    // Basic validation
+    if (!email || !password) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+    
+    // Additional validation
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const { data } = await api.post('/api/auth/login', { email, password });
+      // Prepare login data, only include non-empty values
+      const loginData: any = { email, password };
+      if (staffTitle) loginData.staff_title = staffTitle;
+      if (branchId) loginData.branch_id = branchId;
+      
+      const { data } = await api.post('/api/auth/login', loginData);
       
       // Decode JWT token to get user info
       const tokenParts = data.token.split('.');
       const payload = JSON.parse(atob(tokenParts[1]));
       
       login(data.token, payload);
-      navigate('/');
+      
+      // Add a small delay to ensure state is updated
+      setTimeout(() => {
+        navigate('/admin');
+      }, 100);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      console.error('Login error:', err.response?.data || err.message);
+      const errorMessage = err.response?.data?.error || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -152,71 +217,9 @@ export default function Login() {
           <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
             <Fade in={true} timeout={1000}>
               <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4 } }}>
-                <Box
-                  sx={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: { xs: 70, sm: 80, md: 90 },
-                    height: { xs: 70, sm: 80, md: 90 },
-                    borderRadius: '50%',
-                    background: isDark
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                      : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                    boxShadow: isDark
-                      ? '0 8px 32px rgba(59, 130, 246, 0.3), 0 4px 16px rgba(16, 185, 129, 0.2)'
-                      : '0 8px 32px rgba(30, 64, 175, 0.3), 0 4px 16px rgba(5, 150, 105, 0.2)',
-                    mx: 'auto',
-                    mb: { xs: 2, sm: 3 },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: -2,
-                      borderRadius: '50%',
-                      background: isDark
-                        ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                        : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                      opacity: 0.3,
-                      filter: 'blur(8px)',
-                    },
-                  }}
-                >
-                  <HospitalIcon sx={{ 
-                    fontSize: { xs: 35, sm: 40, md: 45 }, 
-                    color: 'white', 
-                    position: 'relative', 
-                    zIndex: 1 
-                  }} />
+                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+                  <MedSyncLogo size="large" variant="vertical" />
                 </Box>
-                <Typography 
-                  variant="h4" 
-                  component="h1" 
-                  gutterBottom 
-                  sx={{ 
-                    fontWeight: 700,
-                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.125rem' },
-                    background: isDark
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #10B981 100%)'
-                      : 'linear-gradient(135deg, #1E40AF 0%, #059669 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  CATMS
-                </Typography>
-                <Typography 
-                  variant="body1" 
-                  color="text.secondary"
-                  sx={{
-                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
-                    fontSize: { xs: '0.875rem', sm: '1rem' },
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Clinic Appointment & Treatment Management System
-                </Typography>
               </Box>
             </Fade>
             
@@ -244,7 +247,7 @@ export default function Login() {
             </Box>
             
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-              {error && (
+          {error && (
                 <Fade in={!!error} timeout={300}>
                   <Alert 
                     severity="error" 
@@ -263,16 +266,27 @@ export default function Login() {
                 </Fade>
               )}
               
+              <Alert severity="info" sx={{ mb: 2, fontSize: '0.75rem' }}>
+                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                  <strong>✅ WORKING CREDENTIALS:</strong><br/>
+                  <strong>System Administrator:</strong> admin@catms.com / admin123<br/>
+                  <strong>Branch Manager:</strong> mahela.jayawardena@medsync.lk / admin123<br/>
+                  <strong>Doctor:</strong> emma.wilson@medsync.lk / doctor123<br/>
+                  <strong>Receptionist:</strong> david.brown@medsync.lk / password123<br/>
+                  <em>Staff Title & Branch are optional - leave empty if unsure</em>
+                </Typography>
+              </Alert>
+              
               <TextField
                 margin="normal"
                 required
                 fullWidth
-                id="email"
+              id="email"
                 label="Email Address"
                 name="email"
                 autoComplete="email"
                 autoFocus
-                value={email}
+              value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 InputProps={{
                   startAdornment: (
@@ -316,9 +330,9 @@ export default function Login() {
                 name="password"
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
-                id="password"
+              id="password"
                 autoComplete="current-password"
-                value={password}
+              value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 InputProps={{
                   startAdornment: (
@@ -371,12 +385,124 @@ export default function Login() {
                   },
                 }}
               />
+
+              {/* Staff Title Selection */}
+              <FormControl
+                fullWidth
+                margin="normal"
+                sx={{
+                  mb: { xs: 2, sm: 2.5 },
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: isDark ? alpha('#1E293B', 0.5) : 'transparent',
+                    border: isDark ? `1px solid ${alpha('#3B82F6', 0.3)}` : undefined,
+                    minHeight: { xs: '48px', sm: '56px' },
+                    '&:hover': {
+                      border: isDark ? `1px solid ${alpha('#3B82F6', 0.5)}` : undefined,
+                    },
+                    '&.Mui-focused': {
+                      border: isDark ? `1px solid ${alpha('#3B82F6', 0.8)}` : undefined,
+                      boxShadow: isDark ? `0 0 0 2px ${alpha('#3B82F6', 0.2)}` : undefined,
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: isDark ? '#3B82F6' : undefined,
+                  },
+                  '& .MuiSelect-select': {
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    padding: { xs: '12px 14px', sm: '16px 14px' },
+                  },
+                }}
+              >
+                <InputLabel>Staff Title</InputLabel>
+                <Select
+                  value={staffTitle}
+                  onChange={(e) => setStaffTitle(e.target.value)}
+                  label="Staff Title"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <PersonIcon color={isDark ? "primary" : "action"} />
+                    </InputAdornment>
+                  }
+                >
+                  {staffTitles.map((title) => (
+                    <MenuItem key={title} value={title}>
+                      {title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Branch Selection */}
+              <FormControl
+                fullWidth
+                margin="normal"
+                disabled={branchesLoading}
+                sx={{
+                  mb: { xs: 2.5, sm: 3 },
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: isDark ? alpha('#1E293B', 0.5) : 'transparent',
+                    border: isDark ? `1px solid ${alpha('#3B82F6', 0.3)}` : undefined,
+                    minHeight: { xs: '48px', sm: '56px' },
+                    '&:hover': {
+                      border: isDark ? `1px solid ${alpha('#3B82F6', 0.5)}` : undefined,
+                    },
+                    '&.Mui-focused': {
+                      border: isDark ? `1px solid ${alpha('#3B82F6', 0.8)}` : undefined,
+                      boxShadow: isDark ? `0 0 0 2px ${alpha('#3B82F6', 0.2)}` : undefined,
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: isDark ? '#3B82F6' : undefined,
+                  },
+                  '& .MuiSelect-select': {
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    padding: { xs: '12px 14px', sm: '16px 14px' },
+                  },
+                }}
+              >
+                <InputLabel>Branch</InputLabel>
+                <Select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  label="Branch"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <GroupIcon color={isDark ? "primary" : "action"} />
+                    </InputAdornment>
+                  }
+                >
+                  {branchesLoading ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading branches...
+                    </MenuItem>
+                  ) : branches.length > 0 ? (
+                    branches.map((branch: any) => (
+                      <MenuItem key={branch.branch_id} value={branch.branch_id}>
+                        {branch.name} - {branch.location}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>
+                      No branches available. Please contact administrator.
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
               
               <Button
-                type="submit"
+            type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+            disabled={loading || branchesLoading}
                 startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LockIcon />}
                 sx={{
                   mt: { xs: 2, sm: 2.5 },
@@ -490,52 +616,6 @@ export default function Login() {
                   }}
                 >
                   Book appointments & manage your health records
-                </Typography>
-              </Box>
-              
-              {/* Staff Demo Credentials */}
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary" 
-                  gutterBottom
-                  sx={{
-                    color: isDark ? alpha('#E2E8F0', 0.7) : undefined,
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  }}
-                >
-                  Staff Demo Credentials:
-                </Typography>
-                <Typography 
-                  variant="caption" 
-                  display="block" 
-                  sx={{ 
-                    fontFamily: 'monospace', 
-                    mb: { xs: 0.5, sm: 0.75 },
-                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
-                    backgroundColor: isDark ? alpha('#1E293B', 0.3) : undefined,
-                    padding: isDark ? { xs: '6px 8px', sm: '8px 12px' } : undefined,
-                    borderRadius: isDark ? 1 : undefined,
-                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                    wordBreak: 'break-all',
-                  }}
-                >
-                  admin@catms.com / admin123
-                </Typography>
-                <Typography 
-                  variant="caption" 
-                  display="block" 
-                  sx={{ 
-                    fontFamily: 'monospace',
-                    color: isDark ? alpha('#E2E8F0', 0.8) : undefined,
-                    backgroundColor: isDark ? alpha('#1E293B', 0.3) : undefined,
-                    padding: isDark ? { xs: '6px 8px', sm: '8px 12px' } : undefined,
-                    borderRadius: isDark ? 1 : undefined,
-                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                    wordBreak: 'break-all',
-                  }}
-                >
-                  doctor@catms.com / doctor123
                 </Typography>
               </Box>
             </Box>

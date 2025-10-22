@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
+import api from "../services/api";
+import AdminBookingModal from '../components/AdminBookingModal';
 import {
   Box,
   Typography,
@@ -23,6 +25,12 @@ import {
   Select,
   MenuItem,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,6 +42,7 @@ import {
   Edit as EditIcon,
   Cancel as CancelIcon,
   Refresh as RefreshIcon,
+  Schedule as RescheduleIcon,
 } from '@mui/icons-material';
 
 interface Appointment {
@@ -53,11 +62,24 @@ export default function Appointments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [rescheduleData, setRescheduleData] = useState({
+    new_appointment_date: '',
+    reason: '',
+    notify_patient: true
+  });
   const { user } = useAuthStore();
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  const handleBookingSuccess = () => {
+    // Refresh appointments after successful booking
+    fetchAppointments();
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -71,7 +93,60 @@ export default function Appointments() {
     }
   };
 
-  const filteredAppointments = appointments.filter(appointment => {
+  const approveAppointment = async (id: number) => {
+    try {
+      await api.patch(`/api/appointments/${id}/approve`);
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to approve appointment');
+    }
+  };
+
+  const rejectAppointment = async (id: number) => {
+    try {
+      const reason = prompt('Enter rejection reason (optional):') || '';
+      await api.patch(`/api/appointments/${id}/reject`, { reason });
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to reject appointment');
+    }
+  };
+
+  const rescheduleAppointment = async (appointmentId: number) => {
+    try {
+      await api.patch(`/api/appointments/${appointmentId}/reschedule`, rescheduleData);
+      setShowRescheduleDialog(false);
+      setSelectedAppointment(null);
+      setRescheduleData({
+        new_appointment_date: '',
+        reason: '',
+        notify_patient: true
+      });
+      await fetchAppointments();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to reschedule appointment');
+    }
+  };
+
+  const openRescheduleDialog = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setRescheduleData({
+      new_appointment_date: '',
+      reason: '',
+      notify_patient: true
+    });
+    setShowRescheduleDialog(true);
+  };
+
+  const filteredAppointments = appointments
+    .filter(a => {
+      // If doctor, only show Approved appointments
+      if (user?.role === 'Doctor') {
+        return (a as any).status === 'Approved';
+      }
+      return true;
+    })
+    .filter(appointment => {
     if (filterStatus === 'all') return true;
     return appointment.status.toLowerCase() === filterStatus.toLowerCase();
   });
@@ -166,14 +241,13 @@ export default function Appointments() {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
+            onClick={() => setBookingModalOpen(true)}
             sx={{ mt: { xs: 2, sm: 0 } }}
           >
             Book Appointment
           </Button>
         )}
       </Box>
-
-      {/* Stats Overview */}
       <Box 
         display="grid" 
         gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
@@ -349,6 +423,17 @@ export default function Appointments() {
                         <ViewIcon />
                       </IconButton>
                       {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
+                        <Tooltip title="Reschedule Appointment">
+                          <IconButton 
+                            size="small" 
+                            color="warning"
+                            onClick={() => openRescheduleDialog(appointment)}
+                          >
+                            <RescheduleIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
                         <IconButton size="small" color="secondary">
                           <EditIcon />
                         </IconButton>
@@ -357,6 +442,16 @@ export default function Appointments() {
                         <IconButton size="small" color="error">
                           <CancelIcon />
                         </IconButton>
+                      )}
+                      {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (appointment as any).status === 'Pending' && (
+                        <>
+                          <Button size="small" variant="contained" color="success" onClick={() => approveAppointment(appointment.appointment_id)}>
+                            Approve
+                          </Button>
+                          <Button size="small" variant="outlined" color="error" onClick={() => rejectAppointment(appointment.appointment_id)}>
+                            Reject
+                          </Button>
+                        </>
                       )}
                     </Box>
                   </TableCell>
@@ -378,6 +473,94 @@ export default function Appointments() {
           </Box>
         )}
       </Card>
+
+      {/* Admin Booking Modal */}
+      <AdminBookingModal
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        onSuccess={handleBookingSuccess}
+      />
+
+      {/* Reschedule Dialog */}
+      <Dialog
+        open={showRescheduleDialog}
+        onClose={() => {
+          setShowRescheduleDialog(false);
+          setSelectedAppointment(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Reschedule Appointment
+        </DialogTitle>
+        <DialogContent>
+          {selectedAppointment && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Current Appointment Details:
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Patient ID: {selectedAppointment.patient_id}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Date: {formatDateTime(selectedAppointment.appointment_date)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Status: {selectedAppointment.status}
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'grid', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="New Appointment Date & Time"
+              type="datetime-local"
+              value={rescheduleData.new_appointment_date}
+              onChange={(e) => setRescheduleData(prev => ({ ...prev, new_appointment_date: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Reason for Rescheduling"
+              value={rescheduleData.reason}
+              onChange={(e) => setRescheduleData(prev => ({ ...prev, reason: e.target.value }))}
+              multiline
+              rows={3}
+              placeholder="Enter reason for rescheduling..."
+            />
+            <FormControl>
+              <InputLabel>Notify Patient</InputLabel>
+              <Select
+                value={rescheduleData.notify_patient}
+                onChange={(e) => setRescheduleData(prev => ({ ...prev, notify_patient: e.target.value === 'true' }))}
+                label="Notify Patient"
+              >
+                <MenuItem value="true">Yes, notify patient</MenuItem>
+                <MenuItem value="false">No, don't notify patient</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowRescheduleDialog(false);
+              setSelectedAppointment(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => selectedAppointment && rescheduleAppointment(selectedAppointment.appointment_id)}
+            variant="contained"
+            disabled={!rescheduleData.new_appointment_date}
+          >
+            Reschedule Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

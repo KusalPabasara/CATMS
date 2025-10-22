@@ -20,7 +20,6 @@ import {
   Chip,
   Divider,
 } from '@mui/material';
-import { Grid } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   CalendarToday as CalendarIcon,
@@ -39,6 +38,8 @@ interface Doctor {
   full_name: string;
   specialty?: string;
   email: string;
+  branch_id?: number;
+  branch_name?: string;
 }
 
 interface Treatment {
@@ -47,6 +48,15 @@ interface Treatment {
   description: string;
   cost: number;
   duration: number;
+  category?: string;
+}
+
+interface Branch {
+  branch_id: number;
+  name: string;
+  location: string;
+  phone?: string;
+  email?: string;
 }
 
 export default function BookAppointment() {
@@ -57,12 +67,14 @@ export default function BookAppointment() {
   
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
   const [formData, setFormData] = useState({
+    branch_id: '',
     doctor_id: '',
     treatment_id: '',
     appointment_date: '',
@@ -86,37 +98,46 @@ export default function BookAppointment() {
       
       // Try patient-specific endpoints first, fallback to admin endpoints, then mock data
       try {
-        const [doctorsRes, treatmentsRes] = await Promise.all([
+        const [doctorsRes, treatmentsRes, branchesRes] = await Promise.all([
           api.get('/api/patient-auth/doctors'),
-          api.get('/api/patient-auth/treatments')
+          api.get('/api/patient-auth/treatments'),
+          api.get('/api/branches')
         ]);
         
         setDoctors(doctorsRes.data);
         setTreatments(treatmentsRes.data);
+        setBranches(branchesRes.data);
       } catch (patientErr) {
         console.log('Patient endpoints not available, trying admin endpoints...');
         try {
-          const [doctorsRes, treatmentsRes] = await Promise.all([
+          const [doctorsRes, treatmentsRes, branchesRes] = await Promise.all([
             api.get('/api/users?role=doctor'),
-            api.get('/api/treatments')
+            api.get('/api/treatments'),
+            api.get('/api/branches')
           ]);
           
           setDoctors(doctorsRes.data);
           setTreatments(treatmentsRes.data);
+          setBranches(branchesRes.data);
         } catch (adminErr) {
           console.log('Admin endpoints not accessible, using mock data...');
           // Mock data for demonstration
           setDoctors([
-            { user_id: 1, full_name: 'Dr. John Smith', email: 'john.smith@clinic.com', specialty: 'General Medicine' },
-            { user_id: 2, full_name: 'Dr. Sarah Johnson', email: 'sarah.johnson@clinic.com', specialty: 'Cardiology' },
-            { user_id: 3, full_name: 'Dr. Michael Brown', email: 'michael.brown@clinic.com', specialty: 'Dermatology' },
-            { user_id: 4, full_name: 'Dr. Emily Davis', email: 'emily.davis@clinic.com', specialty: 'Pediatrics' }
+            { user_id: 1, full_name: 'Dr. John Smith', email: 'john.smith@clinic.com', specialty: 'General Medicine', branch_id: 1, branch_name: 'Colombo Branch' },
+            { user_id: 2, full_name: 'Dr. Sarah Johnson', email: 'sarah.johnson@clinic.com', specialty: 'Cardiology', branch_id: 1, branch_name: 'Colombo Branch' },
+            { user_id: 3, full_name: 'Dr. Michael Brown', email: 'michael.brown@clinic.com', specialty: 'Dermatology', branch_id: 2, branch_name: 'Galle Branch' },
+            { user_id: 4, full_name: 'Dr. Emily Davis', email: 'emily.davis@clinic.com', specialty: 'Pediatrics', branch_id: 3, branch_name: 'Kandy Branch' }
           ]);
           setTreatments([
             { treatment_id: 1, name: 'General Consultation', description: 'Routine medical consultation', cost: 100, duration: 30, category: 'General' },
             { treatment_id: 2, name: 'Blood Test', description: 'Complete blood count and basic metabolic panel', cost: 50, duration: 15, category: 'Diagnostic' },
             { treatment_id: 3, name: 'X-Ray', description: 'Chest X-ray examination', cost: 75, duration: 20, category: 'Diagnostic' },
             { treatment_id: 4, name: 'Physical Therapy', description: 'Rehabilitation and physical therapy session', cost: 80, duration: 45, category: 'Therapy' }
+          ]);
+          setBranches([
+            { branch_id: 1, name: 'Colombo Branch', location: 'Colombo, Sri Lanka', phone: '+94 11 234 5678', email: 'colombo@medsync.lk' },
+            { branch_id: 2, name: 'Galle Branch', location: 'Galle, Sri Lanka', phone: '+94 91 234 5678', email: 'galle@medsync.lk' },
+            { branch_id: 3, name: 'Kandy Branch', location: 'Kandy, Sri Lanka', phone: '+94 81 234 5678', email: 'kandy@medsync.lk' }
           ]);
         }
       }
@@ -141,11 +162,13 @@ export default function BookAppointment() {
         appointment_date: `${formData.appointment_date}T${formData.appointment_time}:00`,
       };
 
-      await api.post('/api/patient-auth/appointments', appointmentData);
-      setSuccess('Appointment booked successfully!');
+      // Use the new patient endpoint; backend enforces Pending status
+      await api.post('/api/appointments/patient', appointmentData);
+      setSuccess('Appointment request submitted. You will be notified after approval.');
       
       // Reset form
       setFormData({
+        branch_id: '',
         doctor_id: '',
         treatment_id: '',
         appointment_date: '',
@@ -169,6 +192,16 @@ export default function BookAppointment() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError('');
+    
+    // Reset doctor selection when branch changes
+    if (field === 'branch_id') {
+      setFormData(prev => ({ ...prev, doctor_id: '' }));
+    }
+  };
+
+  const getFilteredDoctors = () => {
+    if (!formData.branch_id) return doctors;
+    return doctors.filter(doctor => doctor.branch_id?.toString() === formData.branch_id);
   };
 
   const getMinDate = () => {
@@ -315,9 +348,9 @@ export default function BookAppointment() {
           <CircularProgress size={60} />
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '2fr 1fr' }} gap={3}>
           {/* Appointment Form */}
-          <Grid item xs={12} md={8}>
+          <Box>
             <Card
               sx={{
                 background: isDark 
@@ -337,8 +370,39 @@ export default function BookAppointment() {
                 </Typography>
                 
                 <Box component="form" onSubmit={handleSubmit}>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                  {/* Branch Selection */}
+                  <Box sx={{ mb: 3 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Select Branch *</InputLabel>
+                      <Select
+                        value={formData.branch_id}
+                        onChange={(e) => handleInputChange('branch_id', e.target.value)}
+                        label="Select Branch *"
+                        required
+                      >
+                        {branches.map((branch) => (
+                          <MenuItem key={branch.branch_id} value={branch.branch_id}>
+                            <Box>
+                              <Typography variant="body1" fontWeight="medium">
+                                🏥 {branch.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                📍 {branch.location}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    {!formData.branch_id && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        Please select a branch to see available doctors
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Select Doctor</InputLabel>
                         <Select
@@ -346,26 +410,40 @@ export default function BookAppointment() {
                           onChange={(e) => handleInputChange('doctor_id', e.target.value)}
                           label="Select Doctor"
                           required
+                          disabled={!formData.branch_id}
                         >
-                          {doctors.map((doctor) => (
-                            <MenuItem key={doctor.user_id} value={doctor.user_id}>
-                              <Box>
-                                <Typography variant="body1" fontWeight="medium">
-                                  {doctor.full_name}
-                                </Typography>
-                                {doctor.specialty && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    {doctor.specialty}
-                                  </Typography>
-                                )}
-                              </Box>
+                          {getFilteredDoctors().length === 0 && formData.branch_id ? (
+                            <MenuItem disabled>
+                              <Typography variant="body2" color="text.secondary">
+                                No doctors available at this branch
+                              </Typography>
                             </MenuItem>
-                          ))}
+                          ) : (
+                            getFilteredDoctors().map((doctor) => (
+                              <MenuItem key={doctor.user_id} value={doctor.user_id}>
+                                <Box>
+                                  <Typography variant="body1" fontWeight="medium">
+                                    👨‍⚕️ {doctor.full_name}
+                                  </Typography>
+                                  {doctor.specialty && (
+                                    <Typography variant="caption" color="text.secondary">
+                                      {doctor.specialty}
+                                    </Typography>
+                                  )}
+                                  {doctor.branch_name && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                      📍 {doctor.branch_name}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </MenuItem>
+                            ))
+                          )}
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Select Treatment</InputLabel>
                         <Select
@@ -387,9 +465,9 @@ export default function BookAppointment() {
                           ))}
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         type="date"
@@ -402,10 +480,38 @@ export default function BookAppointment() {
                           max: getMaxDate(),
                         }}
                         required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#ffffff',
+                            color: '#000000',
+                            '& fieldset': {
+                              borderColor: '#d1d5db',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: '#9ca3af',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#3b82f6',
+                            },
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: '#6b7280',
+                            '&.Mui-focused': {
+                              color: '#3b82f6',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#000000',
+                            '&::-webkit-calendar-picker-indicator': {
+                              filter: 'invert(0)',
+                              opacity: 1,
+                            },
+                          },
+                        }}
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         type="time"
@@ -414,10 +520,38 @@ export default function BookAppointment() {
                         onChange={(e) => handleInputChange('appointment_time', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#ffffff',
+                            color: '#000000',
+                            '& fieldset': {
+                              borderColor: '#d1d5db',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: '#9ca3af',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#3b82f6',
+                            },
+                          },
+                          '& .MuiInputLabel-root': {
+                            color: '#6b7280',
+                            '&.Mui-focused': {
+                              color: '#3b82f6',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: '#000000',
+                            '&::-webkit-calendar-picker-indicator': {
+                              filter: 'invert(0)',
+                              opacity: 1,
+                            },
+                          },
+                        }}
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
                         fullWidth
                         label="Reason for Visit"
@@ -426,9 +560,9 @@ export default function BookAppointment() {
                         placeholder="Brief description of your symptoms or concerns"
                         required
                       />
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={6}>
+                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <FormControl fullWidth>
                         <InputLabel>Priority</InputLabel>
                         <Select
@@ -442,9 +576,9 @@ export default function BookAppointment() {
                           <MenuItem value="urgent">Urgent</MenuItem>
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12}>
+                    <Box sx={{ gridColumn: '1' }}>
                       <TextField
                         fullWidth
                         multiline
@@ -454,8 +588,8 @@ export default function BookAppointment() {
                         onChange={(e) => handleInputChange('notes', e.target.value)}
                         placeholder="Any additional information you'd like to share with your doctor"
                       />
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
 
                   <Divider sx={{ my: 3 }} />
 
@@ -492,10 +626,10 @@ export default function BookAppointment() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Appointment Info */}
-          <Grid item xs={12} md={4}>
+          <Box>
             <Card
               sx={{
                 background: isDark 
@@ -589,8 +723,8 @@ export default function BookAppointment() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
     </Box>
   );
