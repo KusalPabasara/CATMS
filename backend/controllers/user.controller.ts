@@ -18,8 +18,8 @@ export const getAllUsers = async (_req: Request, res: Response) => {
 export const getUsersByRole = async (req: Request, res: Response) => {
   try {
     const { role } = req.query;
-    
-    if (!role) {
+
+    if (!role || typeof role !== 'string') {
       return res.status(400).json({ error: "Role parameter is required" });
     }
 
