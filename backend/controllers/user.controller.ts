@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User from "../models/user.model";
-import Staff from "../models/staff.model";
+import Role from "../models/role.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
 
 export const getAllUsers = async (_req: Request, res: Response) => {
@@ -23,36 +23,27 @@ export const getUsersByRole = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Role parameter is required" });
     }
 
-    // For doctor role, we need to get staff members who are doctors
-    if (role === 'doctor') {
-      const doctors = await Staff.findAll({
-        where: { 
-          role: 'Doctor',
-          is_active: true 
-        },
-        order: [['first_name', 'ASC']]
-      });
-      
-      // Map staff to user format for consistency
-      const mappedDoctors = doctors.map(doctor => ({
-        user_id: doctor.staff_id,
-        full_name: `${doctor.first_name} ${doctor.last_name}`,
-        email: doctor.email,
-        specialty: doctor.speciality,
-        role: 'Doctor'
-      }));
-      
-      return res.json(mappedDoctors);
+    // Find the role by name to get the role_id
+    const roleRecord = await Role.findOne({
+      where: { name: role }
+    });
+
+    if (!roleRecord) {
+      return res.status(404).json({ error: "Role not found" });
     }
 
-    // For other roles, use the User model
+    // Get users with the specified role
     const users = await User.findAll({
-      where: { is_active: true },
+      where: { 
+        role_id: roleRecord.role_id,
+        is_active: true 
+      },
       order: [['full_name', 'ASC']]
     });
     
     res.json(users);
   } catch (err) {
+    console.error('Error in getUsersByRole:', err);
     res.status(500).json({ error: "Failed to fetch users by role", details: err });
   }
 };
