@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import Appointment from "../models/appointment.model";
+import Patient from "../models/patient.model";
 import User from "../models/user.model";
 import Branch from "../models/branch.model";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
+import { sendEmail } from "../services/email.service";
 
 export const createEmergencyWalkIn = async (req: Request, res: Response) => {
   try {
@@ -47,31 +49,33 @@ export const createEmergencyWalkIn = async (req: Request, res: Response) => {
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.CREATE, 'Appointment', emergencyAppointment.appointment_id, {
-      action: 'Emergency walk-in created',
-      patient_id,
-      doctor_id,
-      branch_id,
-      emergency_type,
-      priority_level
-    });
+    await logAuditWithRequest(req, auditActions.CREATE, 'Appointment', emergencyAppointment.appointment_id, 
+      `Emergency walk-in created: patient_id=${patient_id}, doctor_id=${doctor_id}, branch_id=${branch_id}, emergency_type=${emergency_type}, priority_level=${priority_level}`);
 
     // Send notification to doctor
     try {
-      await sendEmail({
-        to: doctor.email,
-        subject: 'Emergency Walk-in Patient',
-        template: emailTemplates.EMERGENCY_WALKIN,
-        data: {
-          doctorName: doctor.full_name,
-          patientName: patient.full_name,
-          emergencyType: emergency_type || 'General Emergency',
-          priorityLevel: priority_level || 'Medium',
-          reason: reason,
-          branchName: branch.branch_name,
-          appointmentTime: new Date().toLocaleString()
-        }
-      });
+      await sendEmail(
+        doctor.email,
+        'Emergency Walk-in Patient - MedSync Clinic',
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc2626;">🚨 Emergency Walk-in Appointment</h2>
+            <p>Dear Dr. ${doctor.full_name},</p>
+            <p>A new emergency walk-in appointment has been scheduled:</p>
+            <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <p><strong>Patient:</strong> ${patient.full_name}</p>
+              <p><strong>Emergency Type:</strong> ${emergency_type || 'General Emergency'}</p>
+              <p><strong>Priority Level:</strong> ${priority_level || 'Medium'}</p>
+              <p><strong>Branch:</strong> ${branch.name}</p>
+              <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <p>Please prepare for immediate patient care.</p>
+            <br>
+            <p>Best regards,</p>
+            <p>The MedSync Team</p>
+          </div>
+        `
+      );
     } catch (emailError) {
       console.error('Failed to send emergency notification email:', emailError);
     }
@@ -146,13 +150,8 @@ export const updateEmergencyAppointmentStatus = async (req: Request, res: Respon
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
-      action: 'Emergency appointment status updated',
-      old_status: appointment.status,
-      new_status: status,
-      notes,
-      updated_by
-    });
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', parseInt(appointmentId), 
+      `Emergency appointment status updated: old_status=${appointment.status}, new_status=${status}, notes=${notes || 'none'}, updated_by=${updated_by}`);
 
     res.json({
       success: true,
@@ -196,7 +195,6 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
-import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 import { scheduleReminder } from "../jobs/reminder.job";
 import { isWorkingHour, hasConflictingAppointment } from "../utils/appointment.util";
@@ -253,17 +251,26 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     // Send confirmation email based on status
     if (patient?.email && initialStatus === 'Approved') {
-      const emailTemplate = (emailTemplates as any).appointmentConfirmation(
-        patient.getDataValue('full_name'),
-        appointmentTime,
-        doctor?.getDataValue('full_name') || 'your doctor',
-        branch?.getDataValue('name') || 'our clinic',
-        reason || 'consultation'
-      );
       await sendEmail(
         patient.getDataValue('email'),
-        emailTemplate.subject,
-        emailTemplate.html
+        'Appointment Confirmed - MedSync Clinic',
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">Appointment Confirmed</h2>
+            <p>Dear ${patient.getDataValue('full_name')},</p>
+            <p>Your appointment has been confirmed:</p>
+            <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <p><strong>Doctor:</strong> ${doctor?.getDataValue('full_name') || 'your doctor'}</p>
+              <p><strong>Branch:</strong> ${branch?.getDataValue('name') || 'our clinic'}</p>
+              <p><strong>Date & Time:</strong> ${appointmentTime}</p>
+              <p><strong>Reason:</strong> ${reason || 'consultation'}</p>
+            </div>
+            <p>Please arrive 15 minutes early for your appointment.</p>
+            <br>
+            <p>Best regards,</p>
+            <p>The MedSync Team</p>
+          </div>
+        `
       );
     }
     // For Pending requests, skip email unless a template exists in the future
@@ -388,23 +395,30 @@ export const approveAppointment = async (req: Request, res: Response) => {
       const branch = await Branch.findByPk(appointment.getDataValue('branch_id'));
       const when = appointment.getDataValue('appointment_date');
       if (patient?.email) {
-        const emailTemplate = (emailTemplates as any).appointmentConfirmation(
-          patient.getDataValue('full_name'),
-          when,
-          doctor?.getDataValue('full_name') || 'your doctor',
-          branch?.getDataValue('name') || 'our clinic',
-          appointment.getDataValue('reason') || 'consultation'
+        await sendEmail(
+          patient.getDataValue('email'),
+          'Appointment Approved - MedSync Clinic',
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #059669;">Appointment Approved</h2>
+              <p>Dear ${patient.getDataValue('full_name')},</p>
+              <p>Your appointment has been approved:</p>
+              <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p><strong>Doctor:</strong> ${doctor?.getDataValue('full_name') || 'your doctor'}</p>
+                <p><strong>Branch:</strong> ${branch?.getDataValue('name') || 'our clinic'}</p>
+                <p><strong>Date & Time:</strong> ${when}</p>
+                <p><strong>Reason:</strong> ${appointment.getDataValue('reason') || 'consultation'}</p>
+              </div>
+              <p>Please arrive 15 minutes early for your appointment.</p>
+              <br>
+              <p>Best regards,</p>
+              <p>The MedSync Team</p>
+            </div>
+          `
         );
-        await sendEmail(patient.getDataValue('email'), emailTemplate.subject, emailTemplate.html);
       }
       if (patient?.phone) {
-        const smsText = smsTemplates.appointmentConfirmation(
-          patient.getDataValue('full_name'),
-          (when as Date).toISOString(),
-          doctor?.getDataValue('full_name') || 'your doctor',
-          branch?.getDataValue('name') || 'our clinic',
-          appointment.getDataValue('reason') || 'consultation'
-        );
+        const smsText = `Your appointment with Dr. ${doctor?.getDataValue('full_name') || 'your doctor'} at ${branch?.getDataValue('name') || 'our clinic'} on ${(when as Date).toLocaleString()} has been approved. Reason: ${appointment.getDataValue('reason') || 'consultation'}`;
         await sendSMS(patient.getDataValue('phone'), smsText);
       }
     } catch {}
@@ -593,8 +607,7 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     const newDate = new Date(new_appointment_date);
     const hasConflict = await hasConflictingAppointment(
       appointment.doctor_id!,
-      newDate,
-      appointmentId
+      newDate
     );
 
     if (hasConflict) {
@@ -617,13 +630,8 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
-      action: 'Appointment rescheduled',
-      old_date: oldDate,
-      new_date: newDate,
-      reason,
-      rescheduled_by
-    });
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', parseInt(appointmentId), 
+      `Appointment rescheduled: old_date=${oldDate?.toISOString()}, new_date=${newDate.toISOString()}, reason=${reason || 'none'}, rescheduled_by=${rescheduled_by}`);
 
     // Notify patient if requested
     if (notify_patient) {
@@ -633,30 +641,33 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         const branch = await Branch.findByPk(appointment.branch_id!);
 
         if (patient?.email) {
-          await sendEmail({
-            to: patient.email,
-            subject: 'Appointment Rescheduled',
-            template: emailTemplates.APPOINTMENT_RESCHEDULED,
-            data: {
-              patientName: patient.full_name,
-              doctorName: doctor?.full_name || 'your doctor',
-              branchName: branch?.branch_name || 'our clinic',
-              oldDate: oldDate?.toLocaleString(),
-              newDate: newDate.toLocaleString(),
-              reason: reason || 'No reason provided'
-            }
-          });
+          await sendEmail(
+            patient.email,
+            'Appointment Rescheduled - MedSync Clinic',
+            `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #059669;">Appointment Rescheduled</h2>
+                <p>Dear ${patient.full_name},</p>
+                <p>Your appointment has been rescheduled:</p>
+                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                  <p><strong>Doctor:</strong> ${doctor?.full_name || 'your doctor'}</p>
+                  <p><strong>Branch:</strong> ${branch?.name || 'our clinic'}</p>
+                  <p><strong>Previous Date:</strong> ${oldDate?.toLocaleString()}</p>
+                  <p><strong>New Date:</strong> ${newDate.toLocaleString()}</p>
+                  <p><strong>Reason:</strong> ${reason || 'No reason provided'}</p>
+                </div>
+                <p>Please make note of the new appointment time.</p>
+                <br>
+                <p>Best regards,</p>
+                <p>The MedSync Team</p>
+              </div>
+            `
+          );
         }
 
         if (patient?.phone) {
-          await sendSMS({
-            to: patient.phone,
-            message: smsTemplates.appointmentRescheduled(
-              patient.full_name,
-              newDate.toLocaleString(),
-              doctor?.full_name || 'your doctor'
-            )
-          });
+          const smsText = `Your appointment has been rescheduled to ${newDate.toLocaleString()} with Dr. ${doctor?.full_name || 'your doctor'}. Please make note of the new time.`;
+          await sendSMS(patient.phone, smsText);
         }
       } catch (notificationError) {
         console.error('Failed to send rescheduling notification:', notificationError);
@@ -749,8 +760,7 @@ export const bulkRescheduleAppointments = async (req: Request, res: Response) =>
         const newDate = new Date(new_appointment_date);
         const hasConflict = await hasConflictingAppointment(
           appointment.doctor_id!,
-          newDate,
-          appointmentId
+          newDate
         );
 
         if (hasConflict) {
@@ -766,13 +776,8 @@ export const bulkRescheduleAppointments = async (req: Request, res: Response) =>
         });
 
         // Log audit trail
-        await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
-          action: 'Bulk appointment rescheduled',
-          old_date: appointment.appointment_date,
-          new_date: newDate,
-          reason,
-          rescheduled_by
-        });
+        await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, 
+          `Bulk appointment rescheduled: old_date=${appointment.appointment_date?.toISOString()}, new_date=${newDate.toISOString()}, reason=${reason || 'none'}, rescheduled_by=${rescheduled_by}`);
 
         results.push({
           appointmentId,

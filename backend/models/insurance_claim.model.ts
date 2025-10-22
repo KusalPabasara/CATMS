@@ -1,7 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import User from './user.model';
-import InsurancePolicy from './insurance_policy.model';
 import Appointment from './appointment.model';
 import Invoice from './invoice.model';
 
@@ -26,7 +25,6 @@ interface InsuranceClaimAttributes {
   created_at: Date;
   updated_at: Date;
   Patient?: User;
-  InsurancePolicy?: InsurancePolicy;
   Appointment?: Appointment;
   Invoice?: Invoice;
 }
@@ -56,7 +54,6 @@ class InsuranceClaim extends Model<InsuranceClaimAttributes, InsuranceClaimCreat
 
   // Associations
   public Patient?: User;
-  public InsurancePolicy?: InsurancePolicy;
   public Appointment?: Appointment;
   public Invoice?: Invoice;
 

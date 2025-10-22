@@ -11,10 +11,7 @@ import User from './user.model'
 import Role from './role.model'
 import Specialty from './specialty.model'
 import DoctorSpecialty from './doctor_specialty.model'
-import InsurancePolicy from './insurance_policy.model'
-import PatientInsurance from './patient_insurance.model'
 import InsuranceClaim from './insurance_claim.model'
-import TreatmentCoverage from './treatment_coverage.model'
 
 // Associations for new ER diagram structure
 Staff.belongsTo(Branch, { foreignKey: 'branch_id', as: 'Branch' })
@@ -61,26 +58,6 @@ DoctorSpecialty.belongsTo(Specialty, { foreignKey: 'specialty_id', as: 'Specialt
 User.hasMany(DoctorSpecialty, { foreignKey: 'doctor_id', as: 'DoctorSpecialties' })
 Specialty.hasMany(DoctorSpecialty, { foreignKey: 'specialty_id', as: 'DoctorSpecialties' })
 
-// MedSync Insurance System associations
-PatientInsurance.belongsTo(User, { foreignKey: 'patient_id', as: 'Patient' })
-PatientInsurance.belongsTo(InsurancePolicy, { foreignKey: 'policy_id', as: 'InsurancePolicy' })
-User.hasMany(PatientInsurance, { foreignKey: 'patient_id', as: 'PatientInsurance' })
-InsurancePolicy.hasMany(PatientInsurance, { foreignKey: 'policy_id', as: 'PatientInsurance' })
-
-InsuranceClaim.belongsTo(User, { foreignKey: 'patient_id', as: 'Patient' })
-InsuranceClaim.belongsTo(InsurancePolicy, { foreignKey: 'policy_id', as: 'InsurancePolicy' })
-InsuranceClaim.belongsTo(Appointment, { foreignKey: 'appointment_id', as: 'Appointment' })
-InsuranceClaim.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'Invoice' })
-User.hasMany(InsuranceClaim, { foreignKey: 'patient_id', as: 'InsuranceClaims' })
-InsurancePolicy.hasMany(InsuranceClaim, { foreignKey: 'policy_id', as: 'InsuranceClaims' })
-Appointment.hasMany(InsuranceClaim, { foreignKey: 'appointment_id', as: 'InsuranceClaims' })
-Invoice.hasMany(InsuranceClaim, { foreignKey: 'invoice_id', as: 'InsuranceClaims' })
-
-TreatmentCoverage.belongsTo(InsurancePolicy, { foreignKey: 'policy_id', as: 'InsurancePolicy' })
-TreatmentCoverage.belongsTo(TreatmentCatalogue, { foreignKey: 'treatment_id', as: 'TreatmentCatalogue' })
-InsurancePolicy.hasMany(TreatmentCoverage, { foreignKey: 'policy_id', as: 'TreatmentCoverage' })
-TreatmentCatalogue.hasMany(TreatmentCoverage, { foreignKey: 'treatment_id', as: 'TreatmentCoverage' })
-
 export default {
   Branch,
   Staff,
@@ -95,8 +72,5 @@ export default {
   Role,
   Specialty,
   DoctorSpecialty,
-  InsurancePolicy,
-  PatientInsurance,
-  InsuranceClaim,
-  TreatmentCoverage
+  InsuranceClaim
 }
