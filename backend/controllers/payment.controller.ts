@@ -8,9 +8,10 @@ import Patient from "../models/patient.model";
 import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+// Initialize Stripe only if API key is provided
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil'
-});
+}) : null;
 
 export const createPayment = async (req: Request, res: Response) => {
   try {
@@ -37,6 +38,12 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // Handle online payment through Stripe
     if (method === 'card' && payment_token) {
+      if (!stripe) {
+        return res.status(400).json({ 
+          error: "Stripe payment processing is not configured. Please contact administrator." 
+        });
+      }
+      
       try {
         const stripePayment = await stripe.paymentIntents.create({
           amount: Math.round(amount * 100), // Convert to cents
