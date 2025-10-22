@@ -4,8 +4,7 @@
   "description": "Clinical Appointment and Treatment Management System",
   "main": "backend/server.ts",
   "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd backend && npm run build",
+    "start": "cd backend && npm run dev",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "install-all": "cd backend && npm install && cd ../frontend && npm install",
     "postinstall": "npm run install-all"
