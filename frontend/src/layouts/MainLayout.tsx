@@ -31,9 +31,9 @@ import {
   Security as SecurityIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
+  LocalHospital as HospitalIcon,
   Psychology as PsychologyIcon,
   PersonAdd as PersonAddIcon,
-  Group as GroupIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -55,42 +55,29 @@ export default function MainLayout() {
     navigate('/login');
   };
 
-  // Role-based access control flags
-  const canSeeDoctors = ['System Administrator', 'Branch Manager', 'Receptionist'].includes(user?.role || '');
-  const canSeeStaff = ['System Administrator', 'Branch Manager'].includes(user?.role || '');
-  const canSeeBilling = ['System Administrator', 'Billing Staff', 'Branch Manager', 'Accountant'].includes(user?.role || '');
-  const canSeeAuditLogs = user?.role === 'System Administrator';
-  const canSeeAIMedical = user?.role === 'Doctor';
-
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: <DashboardIcon /> },
     { name: 'Patients', href: '/admin/patients', icon: <PeopleIcon /> },
-    // Doctors tab - hidden from doctors
-    ...(canSeeDoctors ? [{ name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> }] : []),
-    // Staff tab - only for System Administrator and Branch Manager
-    ...(canSeeStaff ? [{ name: 'Staff', href: '/admin/staff', icon: <GroupIcon /> }] : []),
-    // Appointments - visible to everyone including doctors
+    { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
     { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
     { name: 'Calendar View', href: '/admin/appointments/calendar', icon: <EventIcon /> },
     { name: 'Treatments', href: '/admin/treatments', icon: <MedicalIcon /> },
-    // Billing tab - hidden from doctors
-    ...(canSeeBilling ? [{ name: 'Billing', href: '/admin/billing', icon: <PaymentIcon /> }] : []),
-    // Audit Logs - only for System Administrator
-    ...(canSeeAuditLogs ? [{ name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> }] : []),
-    // AI Medical Assistant - only for doctors
-    ...(canSeeAIMedical ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),
+    { name: 'Billing', href: '/admin/billing', icon: <PaymentIcon /> },
+    { name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> },
+    // AI Medical Assistant only for doctors
+    ...(user?.role === 'Doctor' ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),
   ];
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + '/');
 
   const drawer = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box>
       <Toolbar>
         <MargaLogo size="small" variant="horizontal" />
       </Toolbar>
       <Divider />
       
-      <List sx={{ px: 2, py: 1, flexGrow: 1 }}>
+      <List sx={{ px: 2, py: 1 }}>
         {navigation.map((item) => (
           <ListItem key={item.name} disablePadding>
             <ListItemButton
@@ -123,9 +110,9 @@ export default function MainLayout() {
         ))}
       </List>
 
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ mt: 'auto', p: 2 }}>
         <Divider sx={{ mb: 2 }} />
-        <Box display="flex" alignItems="center" gap={2} sx={{ mb: 2 }}>
+        <Box display="flex" alignItems="center" gap={2}>
           <Avatar sx={{ bgcolor: 'primary.main' }}>
             {user?.email?.charAt(0).toUpperCase()}
           </Avatar>
@@ -141,6 +128,7 @@ export default function MainLayout() {
         <ListItemButton
           onClick={handleLogout}
           sx={{
+            mt: 1,
             borderRadius: 2,
             color: 'error.main',
             '&:hover': {
@@ -194,7 +182,7 @@ export default function MainLayout() {
           open={isMobile ? mobileOpen : true}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true,
+            keepMounted: true, // Better open performance on mobile.
           }}
           sx={{
             '& .MuiDrawer-paper': {

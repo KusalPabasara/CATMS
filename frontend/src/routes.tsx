@@ -4,7 +4,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import Doctors from './pages/Doctors';
-import Staff from './pages/Staff'; // ADD THIS IMPORT
 import Appointments from './pages/Appointments';
 import CalendarView from './pages/Appointments/CalendarView';
 import Treatments from './pages/Treatments';
@@ -24,6 +23,7 @@ import { usePatientStore } from './store/patientStore';
 export default function AppRoutes() {
   const { token } = useAuthStore();
   const { isAuthenticated: patientAuthenticated, patient } = usePatientStore();
+
 
   return (
     <Routes>
@@ -55,7 +55,6 @@ export default function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="patients" element={<Patients />} />
           <Route path="doctors" element={<Doctors />} />
-          <Route path="staff" element={<Staff />} /> {/* ADD THIS LINE */}
           <Route path="appointments" element={<Appointments />} />
           <Route path="appointments/calendar" element={<CalendarView />} />
           <Route path="treatments" element={<Treatments />} />
