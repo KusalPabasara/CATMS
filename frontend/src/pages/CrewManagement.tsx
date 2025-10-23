@@ -23,7 +23,9 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Card,
+  CardContent
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import axios from 'axios';
@@ -56,7 +58,8 @@ const CrewManagement: React.FC = () => {
     staff_title: '',
     branch_id: '',
     salary: '',
-    hire_date: ''
+    hire_date: '',
+    password: ''
   });
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -202,7 +205,8 @@ const CrewManagement: React.FC = () => {
       staff_title: '',
       branch_id: '',
       salary: '',
-      hire_date: ''
+      hire_date: '',
+      password: ''
     });
     setEditingMember(null);
     setShowAddForm(true);
@@ -217,7 +221,8 @@ const CrewManagement: React.FC = () => {
       staff_title: member.staff_title,
       branch_id: member.branch_id.toString(),
       salary: member.salary?.toString() || '',
-      hire_date: member.hire_date || ''
+      hire_date: member.hire_date || '',
+      password: ''
     });
     setEditingMember(member);
     setShowAddForm(true);
@@ -304,6 +309,58 @@ const CrewManagement: React.FC = () => {
           {alert.message}
         </Alert>
       )}
+
+      {/* Crew Statistics Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Staff
+              </Typography>
+              <Typography variant="h4">
+                {crewMembers.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Active Staff
+              </Typography>
+              <Typography variant="h4" color="success">
+                {crewMembers.filter(m => m.is_active).length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Nurses
+              </Typography>
+              <Typography variant="h4" color="success">
+                {crewMembers.filter(m => m.role === 'Nurse').length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Receptionists
+              </Typography>
+              <Typography variant="h4" color="primary">
+                {crewMembers.filter(m => m.role === 'Receptionist').length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Crew Members Table */}
       <Paper>
@@ -492,6 +549,18 @@ const CrewManagement: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
+            {!editingMember && (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>
