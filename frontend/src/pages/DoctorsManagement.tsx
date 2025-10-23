@@ -36,7 +36,7 @@ interface Doctor {
   email: string;
   phone: string;
   staff_title: string;
-  specialty: string;
+  specialty?: string;
   branch_id: number;
   branch_name: string;
   is_active: boolean;
@@ -75,6 +75,14 @@ const DoctorsManagement: React.FC = () => {
       // Fetch doctors
       const doctorsResponse = await axios.get('/api/users/by-role?role=Doctor');
       let doctorsData = doctorsResponse.data;
+      
+      // Ensure all doctors have specialty field
+      if (doctorsData && doctorsData.length > 0) {
+        doctorsData = doctorsData.map((doctor: any) => ({
+          ...doctor,
+          specialty: doctor.specialty || doctor.staff_title || 'General Medicine'
+        }));
+      }
       
       // Add mock data if empty
       if (!doctorsData || doctorsData.length === 0) {
@@ -260,7 +268,8 @@ const DoctorsManagement: React.FC = () => {
     }
   };
 
-  const getSpecialtyColor = (specialty: string) => {
+  const getSpecialtyColor = (specialty: string | undefined) => {
+    if (!specialty) return 'default';
     const colors = ['primary', 'secondary', 'success', 'warning', 'error', 'info'];
     const index = specialty.length % colors.length;
     return colors[index];
@@ -388,7 +397,7 @@ const DoctorsManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Chip 
-                      label={doctor.specialty} 
+                      label={doctor.specialty || 'Not Specified'} 
                       color={getSpecialtyColor(doctor.specialty) as any} 
                       size="small" 
                     />
