@@ -19,9 +19,11 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Card,
+  CardContent
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 interface Branch {
@@ -155,6 +157,55 @@ const BranchManagers: React.FC = () => {
     }
   };
 
+  const handleAddBranchManager = async () => {
+    try {
+      // Add 3 branch managers for the 3 branches
+      const branchManagers = [
+        {
+          full_name: 'Dr. Priya Fernando',
+          email: 'priya.fernando@medsync.lk',
+          phone: '+94 77 123 4567',
+          role: 'Branch Manager',
+          staff_title: 'Branch Manager',
+          branch_id: 1,
+          password: 'manager123'
+        },
+        {
+          full_name: 'Dr. Rajesh Perera',
+          email: 'rajesh.perera@medsync.lk',
+          phone: '+94 77 234 5678',
+          role: 'Branch Manager',
+          staff_title: 'Branch Manager',
+          branch_id: 2,
+          password: 'manager123'
+        },
+        {
+          full_name: 'Dr. Anjali Silva',
+          email: 'anjali.silva@medsync.lk',
+          phone: '+94 77 345 6789',
+          role: 'Branch Manager',
+          staff_title: 'Branch Manager',
+          branch_id: 3,
+          password: 'manager123'
+        }
+      ];
+
+      for (const manager of branchManagers) {
+        try {
+          await axios.post('/api/users', manager);
+        } catch (error) {
+          console.log(`Branch manager ${manager.full_name} might already exist`);
+        }
+      }
+
+      setAlert({ type: 'success', message: 'Branch managers added successfully for all 3 branches!' });
+      fetchData();
+    } catch (error) {
+      console.error('Error adding branch managers:', error);
+      setAlert({ type: 'error', message: 'Failed to add branch managers' });
+    }
+  };
+
   const handleAddBranch = () => {
     setFormData({ name: '', location: '', phone: '', email: '' });
     setEditingBranch(null);
@@ -217,14 +268,24 @@ const BranchManagers: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           Branch Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddBranch}
-          sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
-        >
-          Add Branch
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<PersonAddIcon />}
+            onClick={handleAddBranchManager}
+            sx={{ borderColor: '#1976d2', color: '#1976d2' }}
+          >
+            Add 3 Branch Managers
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddBranch}
+            sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
+          >
+            Add Branch
+          </Button>
+        </Box>
       </Box>
 
       {alert && (
@@ -236,6 +297,58 @@ const BranchManagers: React.FC = () => {
           {alert.message}
         </Alert>
       )}
+
+      {/* Branch Statistics Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Branches
+              </Typography>
+              <Typography variant="h4">
+                {branches.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Active Managers
+              </Typography>
+              <Typography variant="h4" color="success">
+                {managers.filter(m => m.is_active).length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Staff
+              </Typography>
+              <Typography variant="h4" color="primary">
+                {branches.reduce((sum, branch) => sum + (branch.staff_count || 0), 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Appointments
+              </Typography>
+              <Typography variant="h4" color="warning">
+                {branches.reduce((sum, branch) => sum + (branch.appointment_count || 0), 0)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Branches Table */}
       <Paper sx={{ mb: 3 }}>

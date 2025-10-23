@@ -69,16 +69,16 @@ export default function AppRoutes() {
                   <BranchManagers />
                 </RoleProtectedRoute>
               } />
+              <Route path="crew-management" element={
+                <RoleProtectedRoute allowedRoles={['System Administrator', 'Branch Manager']}>
+                  <CrewManagement />
+                </RoleProtectedRoute>
+              } />
               
               {/* Branch Manager specific routes */}
               <Route path="doctors-management" element={
                 <RoleProtectedRoute allowedRoles={['Branch Manager']}>
                   <DoctorsManagement />
-                </RoleProtectedRoute>
-              } />
-              <Route path="crew-management" element={
-                <RoleProtectedRoute allowedRoles={['Branch Manager']}>
-                  <CrewManagement />
                 </RoleProtectedRoute>
               } />
               

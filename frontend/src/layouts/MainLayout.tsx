@@ -66,16 +66,13 @@ export default function MainLayout() {
     // Main Admin specific tabs
     ...(user?.role === 'System Administrator' ? [
       { name: 'Branch Managers +', href: '/admin/branch-managers', icon: <PersonAddIcon /> },
+      { name: 'Crew +', href: '/admin/crew-management', icon: <PersonAddIcon /> },
     ] : []),
     
     // Branch Manager specific tabs
     ...(user?.role === 'Branch Manager' ? [
       { name: 'Doctors +', href: '/admin/doctors-management', icon: <PersonAddIcon /> },
-    ] : []),
-    
-    // General admin tabs (for System Administrator and Branch Manager)
-    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [
-      { name: 'Crew +', href: '/admin/users', icon: <PersonAddIcon /> },
+      { name: 'Crew +', href: '/admin/crew-management', icon: <PersonAddIcon /> },
     ] : []),
     
     { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
