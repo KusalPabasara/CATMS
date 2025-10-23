@@ -55,12 +55,53 @@ export const getHierarchicalUsers = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
-    const users = await User.findAll({
-      where: whereClause,
-      order: [['full_name', 'ASC']]
+    // Use raw SQL query to include specialty information
+    const { sequelize } = require('../config/database');
+    
+    const users = await sequelize.query(`
+      SELECT 
+        u.user_id,
+        u.full_name,
+        u.email,
+        u.branch_id,
+        u.staff_title,
+        u.role_id,
+        u.is_active,
+        u.created_at,
+        r.name as role_name,
+        b.name as branch_name,
+        GROUP_CONCAT(s.name) as specialties
+      FROM users u
+      JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN branches b ON u.branch_id = b.branch_id
+      LEFT JOIN doctor_specialties ds ON u.user_id = ds.user_id
+      LEFT JOIN specialties s ON ds.specialty_id = s.specialty_id
+      WHERE u.is_active = true
+        ${currentUser.role === 'Branch Manager' ? `AND u.branch_id = ${currentUser.branch_id}` : ''}
+        ${role ? `AND r.name = '${role}'` : ''}
+        ${branch_id ? `AND u.branch_id = ${branch_id}` : ''}
+      GROUP BY u.user_id, u.full_name, u.email, u.branch_id, u.staff_title, u.role_id, u.is_active, u.created_at, r.name, b.name
+      ORDER BY u.full_name ASC
+    `, {
+      type: sequelize.QueryTypes.SELECT
     });
 
-    res.json(users);
+    // Map to expected format
+    const mappedUsers = users.map((user: any) => ({
+      user_id: user.user_id,
+      full_name: user.full_name,
+      email: user.email,
+      branch_id: user.branch_id,
+      staff_title: user.staff_title,
+      role_id: user.role_id,
+      role_name: user.role_name,
+      branch_name: user.branch_name,
+      is_active: user.is_active,
+      created_at: user.created_at,
+      specialties: user.specialties ? user.specialties.split(',') : []
+    }));
+
+    res.json(mappedUsers);
   } catch (err) {
     console.error('Error fetching hierarchical users:', err);
     res.status(500).json({ error: "Failed to fetch users", details: err });

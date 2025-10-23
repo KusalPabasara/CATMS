@@ -3,6 +3,7 @@ import axios from "axios";
 import { useReactToPrint } from "react-to-print";
 import PaymentModal from "./PaymentModal";
 import InvoicePrint from "./InvoicePrint";
+import CreateInvoiceModal from "../../components/CreateInvoiceModal";
 import type { Invoice, BillingStats } from "./types";
 import { useAuthStore } from "../../store/authStore";
 import ExportButtons from "../../components/ExportButtons";
@@ -53,6 +54,7 @@ export default function BillingPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
   const [stats, setStats] = useState<BillingStats>({
     totalInvoices: 0,
     totalRevenue: 0,
@@ -85,8 +87,136 @@ export default function BillingPage() {
       }
       
       const response = await axios.get('/api/invoices');
-      setInvoices(response.data);
-      calculateStats(response.data);
+      let invoicesData = response.data || [];
+      
+      // Add mock data if no invoices exist
+      if (invoicesData.length === 0) {
+        invoicesData = [
+          {
+            invoice_id: 1001,
+            patient_id: 4001,
+            appointment_id: 3001,
+            total_amount: 2500,
+            paid_amount: 2500,
+            status: 'Paid',
+            created_at: '2024-01-15T10:30:00Z',
+            patient: {
+              patient_id: 4001,
+              full_name: 'Sunil Perera',
+              phone: '0771234567',
+              email: 'sunil.perera@email.com'
+            }
+          },
+          {
+            invoice_id: 1002,
+            patient_id: 4002,
+            appointment_id: 3002,
+            total_amount: 3500,
+            paid_amount: 2000,
+            status: 'Partially Paid',
+            created_at: '2024-01-20T14:15:00Z',
+            patient: {
+              patient_id: 4002,
+              full_name: 'Kumari Wickramasinghe',
+              phone: '0772345678',
+              email: 'kumari.wickramasinghe@email.com'
+            }
+          },
+          {
+            invoice_id: 1003,
+            patient_id: 4003,
+            appointment_id: 3003,
+            total_amount: 1800,
+            paid_amount: 0,
+            status: 'Pending',
+            created_at: '2024-01-25T09:45:00Z',
+            patient: {
+              patient_id: 4003,
+              full_name: 'Nimal Fernando',
+              phone: '0773456789',
+              email: 'nimal.fernando@email.com'
+            }
+          },
+          {
+            invoice_id: 1004,
+            patient_id: 4004,
+            appointment_id: 3004,
+            total_amount: 4200,
+            paid_amount: 4200,
+            status: 'Paid',
+            created_at: '2024-02-01T11:20:00Z',
+            patient: {
+              patient_id: 4004,
+              full_name: 'Samantha Jayawardena',
+              phone: '0774567890',
+              email: 'samantha.jayawardena@email.com'
+            }
+          },
+          {
+            invoice_id: 1005,
+            patient_id: 4005,
+            appointment_id: 3005,
+            total_amount: 2800,
+            paid_amount: 0,
+            status: 'Pending',
+            created_at: '2024-02-05T16:30:00Z',
+            patient: {
+              patient_id: 4005,
+              full_name: 'Rajitha Silva',
+              phone: '0775678901',
+              email: 'rajitha.silva@email.com'
+            }
+          },
+          {
+            invoice_id: 1006,
+            patient_id: 4006,
+            appointment_id: 3006,
+            total_amount: 1500,
+            paid_amount: 1500,
+            status: 'Paid',
+            created_at: '2024-02-10T08:15:00Z',
+            patient: {
+              patient_id: 4006,
+              full_name: 'Priya Perera',
+              phone: '0776789012',
+              email: 'priya.perera@email.com'
+            }
+          },
+          {
+            invoice_id: 1007,
+            patient_id: 4007,
+            appointment_id: 3007,
+            total_amount: 3200,
+            paid_amount: 1000,
+            status: 'Partially Paid',
+            created_at: '2024-02-12T13:45:00Z',
+            patient: {
+              patient_id: 4007,
+              full_name: 'Kamala Wickramasinghe',
+              phone: '0777890123',
+              email: 'kamala.wickramasinghe@email.com'
+            }
+          },
+          {
+            invoice_id: 1008,
+            patient_id: 4008,
+            appointment_id: 3008,
+            total_amount: 2100,
+            paid_amount: 0,
+            status: 'Pending',
+            created_at: '2024-02-15T10:00:00Z',
+            patient: {
+              patient_id: 4008,
+              full_name: 'Nimal Fernando',
+              phone: '0778901234',
+              email: 'nimal.fernando2@email.com'
+            }
+          }
+        ];
+      }
+      
+      setInvoices(invoicesData);
+      calculateStats(invoicesData);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to fetch invoices');
       console.error('Error fetching invoices:', err);
@@ -159,10 +289,10 @@ export default function BillingPage() {
   // Print functionality
   const invoicePrintRef = useRef<HTMLDivElement>(null);
   const handleInvoicePrint = useReactToPrint({
-    content: () => invoicePrintRef.current,
+    contentRef: invoicePrintRef,
     documentTitle: `Invoice_${printInvoice?.invoice_id}`,
     onAfterPrint: () => setPrintInvoice(null)
-  } as any);
+  });
 
   const handlePrintInvoice = (invoice: Invoice) => {
     setPrintInvoice(invoice);
@@ -205,6 +335,7 @@ export default function BillingPage() {
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
+            onClick={() => setShowCreateInvoiceModal(true)}
             sx={{ mt: { xs: 2, sm: 0 } }}
           >
             Create Invoice
@@ -523,6 +654,16 @@ export default function BillingPage() {
           <InvoicePrint ref={invoicePrintRef} invoice={printInvoice} />
         </div>
       )}
+
+      {/* Create Invoice Modal */}
+      <CreateInvoiceModal
+        open={showCreateInvoiceModal}
+        onClose={() => setShowCreateInvoiceModal(false)}
+        onSuccess={() => {
+          fetchInvoices();
+          setShowCreateInvoiceModal(false);
+        }}
+      />
     </Box>
   );
 }

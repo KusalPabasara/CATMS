@@ -11,8 +11,8 @@ const router = Router();
 
 router.use(authenticateToken); // All routes secured
 
-router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getAllUsers);
-router.get("/by-role", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getUsersByRole);
-router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getUserById);
+router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getAllUsers);
+router.get("/by-role", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getUsersByRole);
+router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getUserById);
 
 export default router;

@@ -53,6 +53,10 @@ interface Appointment {
   reason: string;
   priority?: string;
   notes?: string;
+  approval_status?: string;
+  receptionist_approval_status?: string;
+  doctor_approval_status?: string;
+  created_by?: number;
   doctor?: {
     full_name: string;
     specialty?: string;
@@ -141,6 +145,61 @@ export default function AppointmentHistory() {
       case 'in progress': return <ScheduleIcon />;
       default: return <PendingIcon />;
     }
+  };
+
+  const getApprovalStatusIcon = (approvalStatus?: string) => {
+    if (!approvalStatus) return <PendingIcon />;
+    switch (approvalStatus.toLowerCase()) {
+      case 'approved': return <CheckCircleIcon />;
+      case 'rejected': return <CancelIcon />;
+      case 'pending': return <PendingIcon />;
+      default: return <PendingIcon />;
+    }
+  };
+
+  const getApprovalStatusColor = (approvalStatus?: string) => {
+    if (!approvalStatus) return 'warning';
+    switch (approvalStatus.toLowerCase()) {
+      case 'approved': return 'success';
+      case 'rejected': return 'error';
+      case 'pending': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  const getApprovalStatusLabel = (appointment: Appointment) => {
+    // For patient-booked appointments, show as pending approval
+    // We detect this by checking if created_by is null (patient bookings) and status is Scheduled
+    const isPatientBooked = appointment.created_by === null && 
+                           appointment.status === 'Scheduled' && 
+                           !appointment.approval_status;
+    
+    if (isPatientBooked) {
+      return '⏳ Pending Approval';
+    }
+    
+    const { approval_status, receptionist_approval_status, doctor_approval_status } = appointment;
+    
+    // If no approval status fields exist, show as pending
+    if (!approval_status && !receptionist_approval_status && !doctor_approval_status) {
+      return '⏳ Pending Approval';
+    }
+    
+    if (approval_status === 'Approved') {
+      return '✅ Approved';
+    }
+    
+    if (approval_status === 'Rejected') {
+      return '❌ Rejected';
+    }
+    
+    // Show detailed status for pending
+    const receptionistStatus = receptionist_approval_status === 'Approved' ? '✅' : 
+                              receptionist_approval_status === 'Rejected' ? '❌' : '⏳';
+    const doctorStatus = doctor_approval_status === 'Approved' ? '✅' : 
+                        doctor_approval_status === 'Rejected' ? '❌' : '⏳';
+    
+    return `⏳ Pending (R:${receptionistStatus} D:${doctorStatus})`;
   };
 
   const getPriorityColor = (priority?: string) => {
@@ -407,6 +466,9 @@ export default function AppointmentHistory() {
             theme={theme}
             getStatusColor={getStatusColor}
             getStatusIcon={getStatusIcon}
+            getApprovalStatusIcon={getApprovalStatusIcon}
+            getApprovalStatusColor={getApprovalStatusColor}
+            getApprovalStatusLabel={getApprovalStatusLabel}
             getPriorityColor={getPriorityColor}
             formatAppointmentDate={formatAppointmentDate}
           />
@@ -420,6 +482,9 @@ export default function AppointmentHistory() {
             theme={theme}
             getStatusColor={getStatusColor}
             getStatusIcon={getStatusIcon}
+            getApprovalStatusIcon={getApprovalStatusIcon}
+            getApprovalStatusColor={getApprovalStatusColor}
+            getApprovalStatusLabel={getApprovalStatusLabel}
             getPriorityColor={getPriorityColor}
             formatAppointmentDate={formatAppointmentDate}
           />
@@ -433,6 +498,9 @@ export default function AppointmentHistory() {
             theme={theme}
             getStatusColor={getStatusColor}
             getStatusIcon={getStatusIcon}
+            getApprovalStatusIcon={getApprovalStatusIcon}
+            getApprovalStatusColor={getApprovalStatusColor}
+            getApprovalStatusLabel={getApprovalStatusLabel}
             getPriorityColor={getPriorityColor}
             formatAppointmentDate={formatAppointmentDate}
           />
@@ -449,6 +517,9 @@ interface AppointmentTableProps {
   theme: any;
   getStatusColor: (status: string) => string;
   getStatusIcon: (status: string) => React.ReactNode;
+  getApprovalStatusIcon: (approvalStatus: string) => React.ReactNode;
+  getApprovalStatusColor: (approvalStatus: string) => string;
+  getApprovalStatusLabel: (appointment: Appointment) => string;
   getPriorityColor: (priority?: string) => string;
   formatAppointmentDate: (dateString: string) => { date: string; time: string; full: string };
 }
@@ -459,7 +530,10 @@ function AppointmentTable({
   isDark, 
   theme, 
   getStatusColor, 
-  getStatusIcon, 
+  getStatusIcon,
+  getApprovalStatusIcon,
+  getApprovalStatusColor,
+  getApprovalStatusLabel,
   getPriorityColor, 
   formatAppointmentDate 
 }: AppointmentTableProps) {
@@ -600,13 +674,24 @@ function AppointmentTable({
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    icon={getStatusIcon(appointment.status) as React.ReactElement}
-                    label={appointment.status}
-                    color={getStatusColor(appointment.status) as any}
-                    size="small"
-                    variant="filled"
-                  />
+                  <Box display="flex" flexDirection="column" gap={1}>
+                    {/* Approval Status */}
+                    <Chip
+                      icon={getApprovalStatusIcon(appointment.approval_status) as React.ReactElement}
+                      label={getApprovalStatusLabel(appointment)}
+                      color={getApprovalStatusColor(appointment.approval_status) as any}
+                      size="small"
+                      variant="filled"
+                    />
+                    {/* Basic Status */}
+                    <Chip
+                      icon={getStatusIcon(appointment.status) as React.ReactElement}
+                      label={appointment.status}
+                      color={getStatusColor(appointment.status) as any}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
                 </TableCell>
                 <TableCell>
                   <Chip

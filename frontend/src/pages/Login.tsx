@@ -112,7 +112,7 @@ export default function Login() {
       const tokenParts = data.token.split('.');
       const payload = JSON.parse(atob(tokenParts[1]));
       
-      login(data.token, payload);
+      login(data.token);
       
       // Add a small delay to ensure state is updated
       setTimeout(() => {

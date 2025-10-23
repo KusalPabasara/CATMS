@@ -61,19 +61,8 @@ export default function PatientDashboard() {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    console.log('🏠 Dashboard: Patient data changed:', patient);
     // Handle nested patient structure
     const currentPatient = patient;
-    console.log('🏠 Dashboard: Current patient:', currentPatient);
-    console.log('🏠 Dashboard: Profile picture URL:', currentPatient?.profile_picture);
-    
-    // Debug profile picture URL construction
-    if (currentPatient?.profile_picture) {
-      const finalUrl = currentPatient.profile_picture.startsWith('http') ? 
-        currentPatient.profile_picture : 
-        `http://localhost:5000${currentPatient.profile_picture}`;
-      console.log('🏠 Dashboard: Final profile picture URL:', finalUrl);
-    }
     
     if (!currentPatient) {
       navigate('/patient/login');
@@ -103,6 +92,10 @@ export default function PatientDashboard() {
   const handleLogout = () => {
     logout();
     navigate('/patient/login');
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const getStatusColor = (status: string) => {
@@ -198,16 +191,9 @@ export default function PatientDashboard() {
                 : '0 8px 32px rgba(30, 64, 175, 0.3)',
             }}
             onLoad={() => {
-              console.log('🏠 Dashboard: Avatar image loaded successfully');
               setImageError(false);
             }}
             onError={(e) => {
-              console.log('🏠 Dashboard: Avatar image failed to load, using fallback:', e);
-              console.log('🏠 Dashboard: Failed URL was:', currentPatient?.profile_picture ? 
-                (currentPatient.profile_picture.startsWith('http') ? 
-                  currentPatient.profile_picture : 
-                  `http://localhost:5000${currentPatient.profile_picture}`) : 
-                'No URL');
               setImageError(true);
             }}
           >
@@ -236,6 +222,22 @@ export default function PatientDashboard() {
         </Box>
         
         <Box display="flex" gap={2} alignItems="center">
+          <Tooltip title="Print Dashboard Report">
+            <IconButton
+              onClick={handlePrint}
+              sx={{
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: isDark 
+                    ? alpha(theme.palette.primary.main, 0.8) 
+                    : alpha(theme.palette.primary.main, 0.9),
+                },
+              }}
+            >
+              <PrintIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
             <IconButton
               onClick={toggleTheme}

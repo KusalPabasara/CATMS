@@ -1,4 +1,23 @@
 /* Minimal CSS for testing */
+
+/* Fix FullCalendar fcicons font warning - Disable problematic font */
+.fc-icon {
+  font-family: 'Arial', sans-serif !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  font-variant: normal !important;
+  text-transform: none !important;
+  line-height: 1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Override FullCalendar's font loading to prevent errors */
+.fc-button .fc-icon,
+.fc-toolbar .fc-icon {
+  font-family: 'Arial', sans-serif !important;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,4 +30,81 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Print Styles */
+@media print {
+  /* Hide non-essential elements when printing */
+  button,
+  .no-print,
+  [role="tooltip"],
+  .MuiTooltip-popper,
+  .MuiIconButton-root,
+  header nav,
+  aside,
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .MuiCard-root {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Remove shadows and adjust colors for print */
+  .MuiCard-root,
+  .MuiPaper-root {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Optimize backgrounds for print */
+  body,
+  .MuiBox-root {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Make text more readable in print */
+  body {
+    font-size: 12pt;
+  }
+
+  h1 {
+    font-size: 18pt;
+  }
+
+  h2, h3 {
+    font-size: 14pt;
+  }
+
+  /* Ensure tables print properly */
+  table {
+    border-collapse: collapse;
+  }
+
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+
+  /* Add page header */
+  @page {
+    margin: 2cm;
+  }
+
+  /* Print URLs after links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  /* Hide decorative elements */
+  .MuiAvatar-root {
+    border: 1px solid #ddd !important;
+  }
 }

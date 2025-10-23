@@ -67,6 +67,7 @@ export const auditActions = {
   
   // Treatment session actions
   TREATMENT_SESSION_CREATED: "Treatment Session Created",
+  USER_UPDATED: "User Updated",
   USER_DEACTIVATED: "User Deactivated",
   
   // Treatment actions

@@ -2,12 +2,21 @@ export interface Appointment {
   appointment_id: number;
   appointment_date: string;
   status: string;
+  approval_status: string;
   is_walkin: boolean;
   reason: string;
   patient_id: number;
   doctor_id: number;
   branch_id: number;
   created_at: string;
+  // Dual approval workflow fields
+  receptionist_approval_status: string;
+  doctor_approval_status: string;
+  receptionist_approved_by: number | null;
+  doctor_approved_by: number | null;
+  receptionist_approved_at: string | null;
+  doctor_approved_at: string | null;
+  rejection_reason: string | null;
   patient?: {
     patient_id: number;
     full_name: string;

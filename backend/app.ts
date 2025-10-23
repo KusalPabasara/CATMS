@@ -12,8 +12,13 @@ dotenv.config();
 const app = express();
 app.use(cors({ 
   origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'], 
-  credentials: true 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cache-Control', 'Pragma'],
+  exposedHeaders: ['Authorization']
 }));
+
+
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(morgan("dev"));
@@ -23,7 +28,7 @@ app.use('/uploads', (req, res, next) => {
   // Set CORS headers for all requests
   res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
   res.header('Access-Control-Allow-Credentials', 'true');
 
   // Set CORP header to allow cross-origin resource sharing
@@ -59,26 +64,40 @@ import invoiceRoutes from './routes/invoice.routes';
 import aiMedicalRoutes from './routes/ai-medical.routes';
 import treatmentCatalogueRoutes from './routes/treatment_catalogue.routes';
 import userRoutes from './routes/user.routes';
+import hierarchicalUserRoutes from './routes/hierarchical-user.routes';
+import roleRoutes from './routes/role.routes';
 import patientAuthRoutes from './routes/patient.auth.routes';
 import doctorRoutes from './routes/doctor.routes';
+import specialtyRoutes from './routes/specialty.routes';
+import databaseRoutes from './routes/database.routes';
+import insuranceRoutes from './routes/insurance.routes';
+import performanceRoutes from './routes/performance.routes';
+import sampleUsersRoutes from './routes/sample-users.routes';
 
 // Routes
 app.use('/api/patient-auth', patientAuthRoutes); // Patient self-service - different path
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes); // Admin patient management
 app.use('/api/doctors', doctorRoutes); // Admin doctor management
+app.use('/api/specialties', specialtyRoutes); // MedSync multi-specialty management
+app.use('/api/database', databaseRoutes); // Database management and migration
+app.use('/api/insurance', insuranceRoutes); // MedSync insurance claims system
+app.use('/api/performance', performanceRoutes); // MedSync performance monitoring
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/treatments', treatmentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/treatment-catalogue', treatmentCatalogueRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/hierarchical-users', hierarchicalUserRoutes);
+app.use('/api/roles', roleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/ai-medical', aiMedicalRoutes);
+app.use('/api/sample-users', sampleUsersRoutes);
 
 app.get("/", (_req, res) => res.send("MedSync API"));
 

@@ -111,7 +111,7 @@ export default function Profile() {
       
       // Use stored profile picture if available, otherwise use API response
       const profilePictureUrl = storedProfilePicture || 
-        (apiProfilePicture ? `http://localhost:5000${apiProfilePicture}` : null);
+        (apiProfilePicture ? (apiProfilePicture.startsWith('http') ? apiProfilePicture : `http://localhost:5000${apiProfilePicture}`) : null);
       
       setProfilePicture(profilePictureUrl);
       setFormData({
@@ -123,7 +123,8 @@ export default function Profile() {
         gender: response.data.gender || '',
         address: response.data.address || '',
         emergency_contact: response.data.emergency_contact || '',
-        emergency_phone: response.data.emergency_phone || '',
+        emergency_contact_name: response.data.emergency_contact_name || '',
+        emergency_contact_phone: response.data.emergency_contact_phone || '',
         blood_type: response.data.blood_type || '',
         allergies: response.data.allergies || '',
         medical_history: response.data.medical_history || '',
@@ -209,6 +210,7 @@ export default function Profile() {
         emergency_contact_phone: patientData.emergency_contact_phone || '',
         blood_type: patientData.blood_type || '',
         allergies: patientData.allergies || '',
+        medical_history: patientData.medical_history || '',
         profile_picture: patientData.profile_picture || '',
       });
     }
@@ -267,7 +269,9 @@ export default function Profile() {
           });
           
           console.log('📸 Upload response:', uploadResponse.data);
-          updateData.profile_picture = `http://localhost:5000${uploadResponse.data.profile_picture}`;
+          updateData.profile_picture = uploadResponse.data.profile_picture.startsWith('http') 
+            ? uploadResponse.data.profile_picture 
+            : `http://localhost:5000${uploadResponse.data.profile_picture}`;
           console.log('📸 Profile picture URL set:', updateData.profile_picture);
         } catch (uploadErr: any) {
           console.error('❌ Profile picture upload failed:', uploadErr);

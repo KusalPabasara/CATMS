@@ -29,13 +29,15 @@ import {
 } from '@mui/icons-material';
 import api from '../services/api';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
+import { formatLKR } from '../utils/currency';
+import AddTreatmentModal from '../components/AddTreatmentModal';
 
 interface Treatment {
   treatment_id: number;
-  name: string;
+  treatment_name: string;
   description: string;
   duration: number | null;
-  cost: number;
+  standard_cost: number;
   category: string | null;
   icd10_code: string | null;
   cpt_code: string | null;
@@ -48,27 +50,123 @@ export default function Treatments() {
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const fetchTreatments = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/api/treatments');
+      let treatmentsData = response.data || [];
+      
+      // Add mock data if no treatments exist
+      if (treatmentsData.length === 0) {
+        treatmentsData = [
+          {
+            treatment_id: 1,
+            treatment_name: 'General Consultation',
+            description: 'Routine medical consultation and examination',
+            duration: 30,
+            standard_cost: 1500,
+            category: 'General',
+            icd10_code: 'Z00.00',
+            cpt_code: '99213',
+            is_active: true
+          },
+          {
+            treatment_id: 2,
+            treatment_name: 'Blood Pressure Check',
+            description: 'Measurement of blood pressure and cardiovascular assessment',
+            duration: 15,
+            standard_cost: 800,
+            category: 'Diagnostic',
+            icd10_code: 'I10',
+            cpt_code: '93000',
+            is_active: true
+          },
+          {
+            treatment_id: 3,
+            treatment_name: 'Diabetes Management',
+            description: 'Comprehensive diabetes care including glucose monitoring and medication adjustment',
+            duration: 45,
+            standard_cost: 2500,
+            category: 'General',
+            icd10_code: 'E11.9',
+            cpt_code: '99214',
+            is_active: true
+          },
+          {
+            treatment_id: 4,
+            treatment_name: 'Minor Surgery - Wound Suturing',
+            description: 'Surgical closure of lacerations and minor wounds',
+            duration: 60,
+            standard_cost: 3500,
+            category: 'Surgery',
+            icd10_code: 'S01.9',
+            cpt_code: '12001',
+            is_active: true
+          },
+          {
+            treatment_id: 5,
+            treatment_name: 'Physical Therapy Session',
+            description: 'Rehabilitation and physical therapy for musculoskeletal conditions',
+            duration: 45,
+            standard_cost: 2000,
+            category: 'Therapy',
+            icd10_code: 'M79.3',
+            cpt_code: '97110',
+            is_active: true
+          },
+          {
+            treatment_id: 6,
+            treatment_name: 'Emergency Treatment',
+            description: 'Urgent medical care for acute conditions',
+            duration: 30,
+            standard_cost: 3000,
+            category: 'Emergency',
+            icd10_code: 'R50.9',
+            cpt_code: '99281',
+            is_active: true
+          },
+          {
+            treatment_id: 7,
+            treatment_name: 'Vaccination - COVID-19',
+            description: 'COVID-19 vaccination administration',
+            duration: 20,
+            standard_cost: 1200,
+            category: 'Preventive',
+            icd10_code: 'Z23',
+            cpt_code: '91300',
+            is_active: true
+          },
+          {
+            treatment_id: 8,
+            treatment_name: 'ECG Examination',
+            description: 'Electrocardiogram for heart rhythm analysis',
+            duration: 25,
+            standard_cost: 1800,
+            category: 'Diagnostic',
+            icd10_code: 'I49.9',
+            cpt_code: '93000',
+            is_active: true
+          }
+        ];
+      }
+      
+      setTreatments(treatmentsData);
+      setError('');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch treatments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTreatments = async () => {
-      try {
-        const response = await api.get('/api/treatments');
-        setTreatments(response.data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to fetch treatments');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTreatments();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const handleAddSuccess = () => {
+    fetchTreatments(); // Refresh the treatments list
   };
 
   const getCategoryColor = (category: string | null) => {
@@ -231,7 +329,7 @@ export default function Treatments() {
                   >
                     <TableCell>
                       <Typography variant="subtitle2" fontWeight={600} color="text.primary">
-                        {treatment.name}
+                        {treatment.treatment_name}
                       </Typography>
                       {treatment.icd10_code && (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
@@ -282,7 +380,7 @@ export default function Treatments() {
                         }}
                       >
                         <MoneyIcon fontSize="small" />
-                        {formatCurrency(treatment.cost)}
+                        {formatLKR(treatment.standard_cost)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -311,6 +409,7 @@ export default function Treatments() {
       <Tooltip title="Add New Treatment" placement="left">
         <Fab
           color="primary"
+          onClick={() => setAddModalOpen(true)}
           sx={{
             position: 'fixed',
             bottom: 24,
@@ -333,6 +432,13 @@ export default function Treatments() {
           <AddIcon />
         </Fab>
       </Tooltip>
+
+      {/* Add Treatment Modal */}
+      <AddTreatmentModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={handleAddSuccess}
+      />
     </Box>
   );
 }

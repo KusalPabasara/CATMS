@@ -4,24 +4,47 @@ import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
 
-export const getAllPatients = async (_req: Request, res: Response) => {
+export const getAllPatients = async (req: Request, res: Response) => {
   try {
+    const currentUser = (req as any).user;
+    const { role, branch_id } = currentUser;
+
+    let whereClause: any = { active: true };
+
+    // Apply branch-based filtering based on user role
+    if (role === 'System Administrator') {
+      // System Administrator can see all patients
+      // No additional filtering needed
+    } else {
+      // For now, all users can see all patients since there's no branch field
+      // This can be enhanced later when branch functionality is added
+    }
+
     const patients = await Patient.findAll({
-      where: { active: true },
+      where: whereClause,
       order: [['created_at', 'DESC']]
     });
     res.json(patients);
   } catch (err) {
+    console.error("Error fetching patients:", err);
     res.status(500).json({ error: "Failed to fetch patients", details: err });
   }
 };
 
 export const getPatientById = async (req: Request, res: Response) => {
   try {
+    const currentUser = (req as any).user;
+    const { role, branch_id } = currentUser;
+
     const patient = await Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ error: "Patient not found" });
+
+    // For now, all users can access all patients since there's no branch field
+    // This can be enhanced later when branch functionality is added
+
     res.json(patient);
   } catch (err) {
+    console.error("Error fetching patient:", err);
     res.status(500).json({ error: "Failed to fetch patient", details: err });
   }
 };
@@ -31,24 +54,14 @@ import { generateRandomPassword } from '../utils/password.util';
 
 export const createPatient = async (req: Request, res: Response) => {
   try {
-    // Generate a random initial password for the patient
-    const initialPassword = generateRandomPassword();
-    const password_hash = await bcrypt.hash(initialPassword, 10);
+    const currentUser = (req as any).user;
+    const { role, branch_id } = currentUser;
 
-    // Split full name into first and last name
-    const fullName = req.body.full_name || '';
-    const nameParts = fullName.split(' ');
-    const first_name = nameParts[0] || '';
-    const last_name = nameParts.slice(1).join(' ') || '';
-
-    // Create patient with password hash
+    // Create patient with basic information
     const patient = await Patient.create({
       ...req.body,
-      first_name,
-      last_name,
-      password_hash,
       email: req.body.email?.toLowerCase(),
-      national_id: req.body.national_id?.trim()
+      national_id: req.body.national_id?.trim(),
     });
     
     // Log audit trail
@@ -59,43 +72,27 @@ export const createPatient = async (req: Request, res: Response) => {
       (patient as any).patient_id,
       `Created patient: ${(patient as any).full_name}`
     );
-    
-    // Send welcome notifications
-    try {
-      // Send welcome email with credentials
-      if ((patient as any).email) {
-        const emailTemplate = emailTemplates.welcomeWithCredentials(
-          (patient as any).full_name,
-          (patient as any).email,
-          initialPassword
-        );
-        await sendEmail(
-          (patient as any).email,
-          emailTemplate.subject,
-          emailTemplate.html
-        );
-      }
-
-      // Send welcome SMS (optional)
-      if ((patient as any).phone) {
-        const smsMessage = smsTemplates.welcome((patient as any).full_name);
-        await sendSMS((patient as any).phone, smsMessage);
-      }
-    } catch (notificationError) {
-      console.error("❌ Welcome notification failed:", notificationError);
-      // Don't fail the patient creation if notifications fail
-    }
 
     res.status(201).json(patient);
   } catch (err) {
+    console.error("Error creating patient:", err);
     res.status(400).json({ error: "Creation failed", details: err });
   }
 };
 
 export const updatePatient = async (req: Request, res: Response) => {
   try {
+    const currentUser = (req as any).user;
+    const { role, branch_id } = currentUser;
+
     const patient = await Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ error: "Patient not found" });
+
+    // For now, all users can access all patients since there's no branch field
+    // This can be enhanced later when branch functionality is added
+
+    // For now, all users can update patients since there's no branch field
+    // This can be enhanced later when branch functionality is added
 
     await patient.update(req.body);
     
@@ -110,6 +107,7 @@ export const updatePatient = async (req: Request, res: Response) => {
     
     res.json(patient);
   } catch (err) {
+    console.error("Error updating patient:", err);
     res.status(400).json({ error: "Update failed", details: err });
   }
 };

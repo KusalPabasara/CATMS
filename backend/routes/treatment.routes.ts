@@ -13,8 +13,8 @@ const router = Router();
 
 router.use(authenticateToken); // All routes secured
 
-router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getAllTreatments);
-router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getTreatmentById);
+router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getAllTreatments);
+router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getTreatmentById);
 router.post("/", authorizeRoles("System Administrator"), createTreatment);
 router.put("/:id", authorizeRoles("System Administrator"), updateTreatment);
 router.delete("/:id", authorizeRoles("System Administrator"), deleteTreatment);

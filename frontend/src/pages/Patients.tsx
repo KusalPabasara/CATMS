@@ -110,6 +110,49 @@ export default function Patients() {
     }
   };
 
+  const handleViewPatient = (patient: Patient) => {
+    // Create a modal or navigate to patient details
+    const patientDetails = `
+Patient Details:
+Name: ${patient.full_name}
+National ID: ${patient.national_id}
+Date of Birth: ${patient.dob}
+Gender: ${patient.gender}
+Blood Type: ${patient.blood_type}
+Phone: ${patient.phone}
+Email: ${patient.email || 'N/A'}
+Address: ${patient.address || 'N/A'}
+Emergency Contact: ${patient.emergency_contact_name || 'N/A'} (${patient.emergency_contact_phone || 'N/A'})
+Allergies: ${patient.allergies || 'None'}
+Insurance Provider: ${patient.insurance_provider || 'N/A'}
+Insurance Policy: ${patient.insurance_policy_number || 'N/A'}
+Status: ${patient.active ? 'Active' : 'Inactive'}
+Registered: ${new Date(patient.created_at).toLocaleDateString()}
+    `;
+    
+    alert(patientDetails);
+  };
+
+  const handleEditPatient = (patient: Patient) => {
+    // Pre-fill form with patient data for editing
+    setFormData({
+      full_name: patient.full_name,
+      national_id: patient.national_id,
+      dob: patient.dob,
+      gender: patient.gender || '',
+      blood_type: patient.blood_type || '',
+      phone: patient.phone,
+      email: patient.email || '',
+      address: patient.address || '',
+      emergency_contact_name: patient.emergency_contact_name || '',
+      emergency_contact_phone: patient.emergency_contact_phone || '',
+      allergies: patient.allergies || '',
+      insurance_provider: patient.insurance_provider || '',
+      insurance_policy_number: patient.insurance_policy_number || ''
+    });
+    setShowAddForm(true);
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -278,11 +321,19 @@ export default function Patients() {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
-                        <Button size="small" color="primary">
+                        <Button 
+                          size="small" 
+                          color="primary"
+                          onClick={() => handleViewPatient(patient)}
+                        >
                           View
                         </Button>
                         {(user?.role === 'Receptionist' || user?.role === 'System Administrator') && (
-                          <Button size="small" color="secondary">
+                          <Button 
+                            size="small" 
+                            color="secondary"
+                            onClick={() => handleEditPatient(patient)}
+                          >
                             Edit
                           </Button>
                         )}

@@ -7,7 +7,6 @@ import Users from './pages/Users';
 import BranchManagers from './pages/BranchManagers';
 import DoctorsManagement from './pages/DoctorsManagement';
 import CrewManagement from './pages/CrewManagement';
-import Doctors from './pages/Doctors';
 import Appointments from './pages/Appointments';
 import CalendarView from './pages/Appointments/CalendarView';
 import Treatments from './pages/Treatments';
@@ -87,11 +86,6 @@ export default function AppRoutes() {
               <Route path="users" element={
                 <RoleProtectedRoute allowedRoles={['System Administrator', 'Branch Manager']}>
                   <Users />
-                </RoleProtectedRoute>
-              } />
-              <Route path="doctors" element={
-                <RoleProtectedRoute allowedRoles={['System Administrator', 'Branch Manager']}>
-                  <Doctors />
                 </RoleProtectedRoute>
               } />
           <Route path="appointments" element={<Appointments />} />

@@ -7,6 +7,8 @@ import {
   updateAppointment,
   cancelAppointment,
   approveAppointment,
+  approveAppointmentByReceptionist,
+  approveAppointmentByDoctor,
   rejectAppointment,
   createEmergencyWalkIn,
   getEmergencyAppointments,
@@ -23,15 +25,21 @@ const router = Router();
 
 router.use(authenticateToken); // All routes secured
 
-router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getAllAppointments);
-router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator"), getAppointmentById);
-router.post("/", authorizeRoles("Receptionist", "System Administrator"), createAppointment);
+router.get("/", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getAllAppointments);
+router.get("/:id", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), getAppointmentById);
+router.post("/", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), createAppointment);
 // Patient self-service route using patient JWT auth
 router.post("/patient", authenticatePatient, createAppointmentAsPatient);
-router.put("/:id", authorizeRoles("Receptionist", "System Administrator"), updateAppointment);
-router.delete("/:id", authorizeRoles("Receptionist", "System Administrator"), cancelAppointment);
-router.patch("/:id/approve", authorizeRoles("Receptionist", "System Administrator"), approveAppointment);
-router.patch("/:id/reject", authorizeRoles("Receptionist", "System Administrator"), rejectAppointment);
+router.put("/:id", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), updateAppointment);
+router.delete("/:id", authorizeRoles("Receptionist", "System Administrator", "Branch Manager"), cancelAppointment);
+// Legacy approval route (redirects to appropriate approval based on role)
+router.patch("/:id/approve", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), approveAppointment);
+
+// New dual approval workflow routes
+router.patch("/:id/approve/receptionist", authorizeRoles("Receptionist"), approveAppointmentByReceptionist);
+router.patch("/:id/approve/doctor", authorizeRoles("Doctor"), approveAppointmentByDoctor);
+
+router.patch("/:id/reject", authorizeRoles("Doctor", "Receptionist", "System Administrator", "Branch Manager"), rejectAppointment);
 
 // ===== PHASE 4: EMERGENCY WALK-IN APPOINTMENTS =====
 

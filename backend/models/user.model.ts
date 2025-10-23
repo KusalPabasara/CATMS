@@ -17,7 +17,6 @@ interface UserAttributes {
   last_login?: Date;
   Role?: Role;
   Branch?: Branch;
-  DoctorSpecialties?: any[];
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, 'user_id' | 'is_active' | 'created_at'> {}

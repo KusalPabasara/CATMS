@@ -42,14 +42,6 @@ interface Doctor {
   branch_name?: string;
 }
 
-interface Treatment {
-  treatment_id: number;
-  name: string;
-  description: string;
-  cost: number;
-  duration: number;
-  category?: string;
-}
 
 interface Branch {
   branch_id: number;
@@ -66,7 +58,6 @@ export default function BookAppointment() {
   const theme = useTheme();
   
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -76,7 +67,6 @@ export default function BookAppointment() {
   const [formData, setFormData] = useState({
     branch_id: '',
     doctor_id: '',
-    treatment_id: '',
     appointment_date: '',
     appointment_time: '',
     reason: '',
@@ -96,51 +86,14 @@ export default function BookAppointment() {
     try {
       setLoading(true);
       
-      // Try patient-specific endpoints first, fallback to admin endpoints, then mock data
-      try {
-        const [doctorsRes, treatmentsRes, branchesRes] = await Promise.all([
-          api.get('/api/patient-auth/doctors'),
-          api.get('/api/patient-auth/treatments'),
-          api.get('/api/branches')
-        ]);
-        
-        setDoctors(doctorsRes.data);
-        setTreatments(treatmentsRes.data);
-        setBranches(branchesRes.data);
-      } catch (patientErr) {
-        console.log('Patient endpoints not available, trying admin endpoints...');
-        try {
-          const [doctorsRes, treatmentsRes, branchesRes] = await Promise.all([
-            api.get('/api/users?role=doctor'),
-            api.get('/api/treatments'),
-            api.get('/api/branches')
-          ]);
-          
-          setDoctors(doctorsRes.data);
-          setTreatments(treatmentsRes.data);
-          setBranches(branchesRes.data);
-        } catch (adminErr) {
-          console.log('Admin endpoints not accessible, using mock data...');
-          // Mock data for demonstration
-          setDoctors([
-            { user_id: 1, full_name: 'Dr. John Smith', email: 'john.smith@clinic.com', specialty: 'General Medicine', branch_id: 1, branch_name: 'Colombo Branch' },
-            { user_id: 2, full_name: 'Dr. Sarah Johnson', email: 'sarah.johnson@clinic.com', specialty: 'Cardiology', branch_id: 1, branch_name: 'Colombo Branch' },
-            { user_id: 3, full_name: 'Dr. Michael Brown', email: 'michael.brown@clinic.com', specialty: 'Dermatology', branch_id: 2, branch_name: 'Galle Branch' },
-            { user_id: 4, full_name: 'Dr. Emily Davis', email: 'emily.davis@clinic.com', specialty: 'Pediatrics', branch_id: 3, branch_name: 'Kandy Branch' }
-          ]);
-          setTreatments([
-            { treatment_id: 1, name: 'General Consultation', description: 'Routine medical consultation', cost: 100, duration: 30, category: 'General' },
-            { treatment_id: 2, name: 'Blood Test', description: 'Complete blood count and basic metabolic panel', cost: 50, duration: 15, category: 'Diagnostic' },
-            { treatment_id: 3, name: 'X-Ray', description: 'Chest X-ray examination', cost: 75, duration: 20, category: 'Diagnostic' },
-            { treatment_id: 4, name: 'Physical Therapy', description: 'Rehabilitation and physical therapy session', cost: 80, duration: 45, category: 'Therapy' }
-          ]);
-          setBranches([
-            { branch_id: 1, name: 'Colombo Branch', location: 'Colombo, Sri Lanka', phone: '+94 11 234 5678', email: 'colombo@medsync.lk' },
-            { branch_id: 2, name: 'Galle Branch', location: 'Galle, Sri Lanka', phone: '+94 91 234 5678', email: 'galle@medsync.lk' },
-            { branch_id: 3, name: 'Kandy Branch', location: 'Kandy, Sri Lanka', phone: '+94 81 234 5678', email: 'kandy@medsync.lk' }
-          ]);
-        }
-      }
+      // Use patient-specific endpoints
+      const [doctorsRes, branchesRes] = await Promise.all([
+        api.get('/api/patient-auth/doctors'),
+        api.get('/api/branches')
+      ]);
+      
+      setDoctors(doctorsRes.data);
+      setBranches(branchesRes.data);
     } catch (err: any) {
       console.error('Error loading data:', err);
       setError('Failed to load data. Please try again.');
@@ -170,7 +123,6 @@ export default function BookAppointment() {
       setFormData({
         branch_id: '',
         doctor_id: '',
-        treatment_id: '',
         appointment_date: '',
         appointment_time: '',
         reason: '',
@@ -201,7 +153,15 @@ export default function BookAppointment() {
 
   const getFilteredDoctors = () => {
     if (!formData.branch_id) return doctors;
-    return doctors.filter(doctor => doctor.branch_id?.toString() === formData.branch_id);
+    
+    // Handle both string and number comparisons
+    const filtered = doctors.filter(doctor => {
+      const doctorBranchId = doctor.branch_id?.toString();
+      const selectedBranchId = formData.branch_id?.toString();
+      return doctorBranchId === selectedBranchId;
+    });
+    
+    return filtered;
   };
 
   const getMinDate = () => {
@@ -401,71 +361,54 @@ export default function BookAppointment() {
                     )}
                   </Box>
 
-                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
-                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
-                      <FormControl fullWidth>
-                        <InputLabel>Select Doctor</InputLabel>
-                        <Select
-                          value={formData.doctor_id}
-                          onChange={(e) => handleInputChange('doctor_id', e.target.value)}
-                          label="Select Doctor"
-                          required
-                          disabled={!formData.branch_id}
-                        >
-                          {getFilteredDoctors().length === 0 && formData.branch_id ? (
-                            <MenuItem disabled>
-                              <Typography variant="body2" color="text.secondary">
-                                No doctors available at this branch
-                              </Typography>
-                            </MenuItem>
-                          ) : (
-                            getFilteredDoctors().map((doctor) => (
-                              <MenuItem key={doctor.user_id} value={doctor.user_id}>
-                                <Box>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    👨‍⚕️ {doctor.full_name}
-                                  </Typography>
-                                  {doctor.specialty && (
-                                    <Typography variant="caption" color="text.secondary">
-                                      {doctor.specialty}
-                                    </Typography>
-                                  )}
-                                  {doctor.branch_name && (
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                      📍 {doctor.branch_name}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              </MenuItem>
-                            ))
-                          )}
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
-                      <FormControl fullWidth>
-                        <InputLabel>Select Treatment</InputLabel>
-                        <Select
-                          value={formData.treatment_id}
-                          onChange={(e) => handleInputChange('treatment_id', e.target.value)}
-                          label="Select Treatment"
-                        >
-                          {treatments.map((treatment) => (
-                            <MenuItem key={treatment.treatment_id} value={treatment.treatment_id}>
+                  {/* Doctor Selection */}
+                  <Box sx={{ mb: 3 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Select Doctor *</InputLabel>
+                      <Select
+                        value={formData.doctor_id}
+                        onChange={(e) => handleInputChange('doctor_id', e.target.value)}
+                        label="Select Doctor *"
+                        required
+                        disabled={!formData.branch_id}
+                      >
+                        {getFilteredDoctors().length === 0 && formData.branch_id ? (
+                          <MenuItem disabled>
+                            <Typography variant="body2" color="text.secondary">
+                              No doctors available at this branch
+                            </Typography>
+                          </MenuItem>
+                        ) : (
+                          getFilteredDoctors().map((doctor) => (
+                            <MenuItem key={doctor.user_id} value={doctor.user_id}>
                               <Box>
                                 <Typography variant="body1" fontWeight="medium">
-                                  {treatment.name}
+                                  👨‍⚕️ {doctor.full_name}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  ${treatment.cost} • {treatment.duration} min
-                                </Typography>
+                                {doctor.specialty && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {doctor.specialty}
+                                  </Typography>
+                                )}
+                                {doctor.branch_name && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    📍 {doctor.branch_name}
+                                  </Typography>
+                                )}
                               </Box>
                             </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Box>
+                          ))
+                        )}
+                      </Select>
+                    </FormControl>
+                    {!formData.doctor_id && formData.branch_id && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        Please select a doctor for your appointment
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
 
                     <Box sx={{ gridColumn: { xs: '1', md: 'span 1' } }}>
                       <TextField
@@ -699,23 +642,29 @@ export default function BookAppointment() {
                   <Box display="flex" alignItems="center" gap={1}>
                     <Chip label="1" size="small" color="primary" />
                     <Typography variant="body2">
-                      Select your preferred doctor
+                      Select your preferred branch
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" gap={1}>
                     <Chip label="2" size="small" color="primary" />
                     <Typography variant="body2">
-                      Choose available date & time
+                      Choose your doctor
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" gap={1}>
                     <Chip label="3" size="small" color="primary" />
                     <Typography variant="body2">
-                      Describe your symptoms
+                      Select date & time
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" gap={1}>
                     <Chip label="4" size="small" color="primary" />
+                    <Typography variant="body2">
+                      Describe your symptoms
+                    </Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Chip label="5" size="small" color="primary" />
                     <Typography variant="body2">
                       Submit your request
                     </Typography>

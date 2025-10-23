@@ -7,7 +7,10 @@ import fs from 'fs';
 import '../models/index';
 import Patient from '../models/patient.model';
 import Appointment from '../models/appointment.model';
+import User from '../models/user.model';
+import Branch from '../models/branch.model';
 import Staff from '../models/staff.model';
+import sequelize from '../config/database';
 import { generateToken } from '../utils/jwt.util';
 import { sendEmail, emailTemplates } from '../services/email.service';
 import { sendSMS, smsTemplates } from '../services/sms.service';
@@ -45,21 +48,20 @@ export const patientLogin = async (req: Request, res: Response) => {
     }
 
     // Check if patient has a password set
-    const hasPasswordHash = !!patient.getDataValue('password_hash');
-    console.log('🔍 Patient has password hash:', hasPasswordHash);
+    const storedPassword = patient.getDataValue('password_hash');
+    console.log('🔍 Patient has password:', !!storedPassword);
     
-    if (!hasPasswordHash) {
-      console.log('❌ Patient has no password hash');
+    if (!storedPassword) {
+      console.log('❌ Patient has no password');
       return res.status(401).json({ 
         error: 'Account not activated. Please contact clinic staff to set up your password.' 
       });
     }
 
-    // Verify password with proper hashing
-    const storedHash = patient.getDataValue('password_hash');
-    console.log('🔍 Comparing password with hash (first 20 chars):', storedHash?.substring(0, 20));
+    // Verify password (plain text comparison for simplicity)
+    console.log('🔍 Comparing password:', password, 'with stored:', storedPassword);
     
-    const isValid = await bcrypt.compare(password, storedHash);
+    const isValid = password === storedPassword;
     console.log('🔍 Password validation result:', isValid);
     
     if (!isValid) {
@@ -122,25 +124,33 @@ export const patientRegister = async (req: Request, res: Response) => {
     }
 
     // Check if patient already exists
+    console.log('🔍 Checking for existing patient with email:', email);
     const existingPatient = await Patient.findOne({
       where: { email }
     });
 
     if (existingPatient) {
-      return res.status(409).json({ error: 'An account with this email already exists' });
+      console.log('❌ Patient already exists with email:', email);
+      return res.status(409).json({ 
+        error: 'An account with this email already exists. Please try logging in instead or use a different email address.' 
+      });
     }
 
     // Check national ID uniqueness
+    console.log('🔍 Checking for existing patient with national_id:', national_id);
     const existingNationalId = await Patient.findOne({
       where: { national_id }
     });
 
     if (existingNationalId) {
-      return res.status(409).json({ error: 'An account with this National ID already exists' });
+      console.log('❌ Patient already exists with national_id:', national_id);
+      return res.status(409).json({ 
+        error: 'An account with this National ID already exists. Please try logging in instead or contact support if you believe this is an error.' 
+      });
     }
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 10);
+    // Store password as plain text for simplicity
+    const password_hash = password;
 
     // Split full_name into first_name and last_name
     const nameParts = full_name.trim().split(' ');
@@ -226,10 +236,23 @@ export const updatePatientProfile = async (req: Request, res: Response) => {
     // Don't allow changing critical fields
     const { password, password_hash, patient_id, email, national_id, date_of_birth, ...rawUpdateData } = req.body;
 
-    // Map frontend field names to database column names
+    // Map frontend field names to database column names and handle empty values
     const updateData = {
       ...rawUpdateData,
-      ...(date_of_birth && { dob: date_of_birth })
+      ...(date_of_birth && { dob: date_of_birth }),
+      // Handle empty strings for ENUM fields - convert to null
+      ...(rawUpdateData.gender === '' ? { gender: null } : {}),
+      // Handle empty strings for other optional fields
+      ...(rawUpdateData.blood_type === '' ? { blood_type: null } : {}),
+      ...(rawUpdateData.phone === '' ? { phone: null } : {}),
+      ...(rawUpdateData.address === '' ? { address: null } : {}),
+      ...(rawUpdateData.emergency_contact === '' ? { emergency_contact: null } : {}),
+      ...(rawUpdateData.emergency_contact_name === '' ? { emergency_contact_name: null } : {}),
+      ...(rawUpdateData.emergency_contact_phone === '' ? { emergency_contact_phone: null } : {}),
+      ...(rawUpdateData.insurance_provider === '' ? { insurance_provider: null } : {}),
+      ...(rawUpdateData.insurance_policy_number === '' ? { insurance_policy_number: null } : {}),
+      ...(rawUpdateData.allergies === '' ? { allergies: null } : {}),
+      ...(rawUpdateData.national_id === '' ? { national_id: null } : {})
     };
 
     await patient.update(updateData);
@@ -284,18 +307,16 @@ export const changePatientPassword = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
-      current_password, 
-      patient.getDataValue('password_hash')
-    );
+    // Verify current password (plain text comparison)
+    const storedPassword = patient.getDataValue('password_hash');
+    const isCurrentPasswordValid = current_password === storedPassword;
 
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
-    const new_password_hash = await bcrypt.hash(new_password, 10);
+    // Store new password as plain text
+    const new_password_hash = new_password;
     
     // Update password
     await patient.update({ password_hash: new_password_hash });
@@ -350,12 +371,50 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Patient authentication required' });
     }
 
-    const appointments = await Appointment.findAll({
-      where: { patient_id: patientId },
-      order: [['appointment_date', 'DESC']]
+    // Use raw SQL query to avoid association issues
+    
+    const appointments = await sequelize.query(`
+      SELECT 
+        a.*,
+        u.full_name as doctor_name,
+        u.email as doctor_email,
+        u.staff_title as doctor_title,
+        b.name as branch_name
+      FROM appointments a
+      LEFT JOIN users u ON a.doctor_id = u.user_id
+      LEFT JOIN branches b ON a.branch_id = b.branch_id
+      WHERE a.patient_id = :patientId
+      ORDER BY a.appointment_date DESC
+    `, {
+      replacements: { patientId },
+      type: sequelize.QueryTypes.SELECT
     });
 
-    res.json(appointments);
+    // Transform the data to match frontend expectations
+    const transformedAppointments = appointments.map((apt: any) => ({
+      appointment_id: apt.appointment_id,
+      appointment_date: apt.appointment_date,
+      status: apt.status,
+      reason: apt.reason,
+      priority: apt.priority,
+      notes: apt.notes,
+      approval_status: apt.approval_status,
+      receptionist_approval_status: apt.receptionist_approval_status,
+      doctor_approval_status: apt.doctor_approval_status,
+      created_by: apt.created_by,
+      created_at: apt.created_at,
+      doctor: apt.doctor_name ? {
+        full_name: apt.doctor_name,
+        specialty: apt.doctor_title,
+        email: apt.doctor_email
+      } : null,
+      treatment: null, // No treatment data for now
+      branch: apt.branch_name ? {
+        name: apt.branch_name
+      } : null
+    }));
+
+    res.json(transformedAppointments);
   } catch (err) {
     console.error('Get patient appointments error:', err);
     res.status(500).json({ error: 'Failed to fetch appointments', details: err });
@@ -397,16 +456,18 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Doctor not found' });
     }
 
-    // Create appointment as Pending (to be approved by staff)
+    // Create appointment as Scheduled (patient-booked appointments need approval)
     const appointment = await Appointment.create({
       patient_id: patientId,
       doctor_id,
-      treatment_id: treatment_id || null,
+      branch_id: doctor.getDataValue('branch_id'), // Get doctor's branch
       appointment_date: new Date(appointment_date),
       reason,
       priority,
       notes,
-      status: 'Pending' as any,
+      status: 'Scheduled' as any,
+      is_walkin: false,
+      created_by: null, // Patient bookings don't have a user creator
       created_at: new Date()
     });
 
@@ -443,24 +504,40 @@ export const createPatientAppointment = async (req: Request, res: Response) => {
 // Get Doctors for Patient
 export const getPatientDoctors = async (req: Request, res: Response) => {
   try {
-    // Use Staff table aligned with current schema
-    const Staff = require('../models/staff.model').default;
+    const { sequelize } = require('../config/database');
 
-    const staffDoctors = await Staff.findAll({
-      where: { role: 'Doctor', is_active: true },
-      attributes: ['staff_id', 'first_name', 'last_name', 'email', 'speciality'],
-      order: [['first_name', 'ASC'], ['last_name', 'ASC']]
+    const doctors = await sequelize.query(`
+      SELECT 
+        u.user_id,
+        u.full_name,
+        u.email,
+        r.name as role,
+        u.branch_id,
+        u.staff_title,
+        s.name as specialty_name,
+        b.name as branch_name
+      FROM users u
+      JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN doctor_specialties ds ON u.user_id = ds.user_id
+      LEFT JOIN specialties s ON ds.specialty_id = s.specialty_id
+      LEFT JOIN branches b ON u.branch_id = b.branch_id
+      WHERE r.name = 'Doctor' AND u.is_active = true
+      ORDER BY u.full_name ASC
+    `, {
+      type: sequelize.QueryTypes.SELECT
     });
 
     // Map to frontend expected shape
-    const doctors = staffDoctors.map((d: any) => ({
-      user_id: d.getDataValue('staff_id'),
-      full_name: `${d.getDataValue('first_name') || ''} ${d.getDataValue('last_name') || ''}`.trim(),
-      email: d.getDataValue('email') || '',
-      specialty: d.getDataValue('speciality') || null
+    const mappedDoctors = doctors.map((d: any) => ({
+      user_id: d.user_id,
+      full_name: d.full_name || '',
+      email: d.email || '',
+      specialty: d.specialty_name || 'General Medicine',
+      branch_id: d.branch_id,
+      branch_name: d.branch_name || 'Main Branch'
     }));
 
-    res.status(200).json(doctors);
+    res.status(200).json(mappedDoctors);
   } catch (err) {
     console.error('Get patient doctors error:', err);
     res.status(500).json({ error: 'Failed to fetch doctors', details: err });
@@ -470,26 +547,37 @@ export const getPatientDoctors = async (req: Request, res: Response) => {
 // Get Treatments for Patient
 export const getPatientTreatments = async (req: Request, res: Response) => {
   try {
-    // Use TreatmentCatalogue aligned with current schema
-    const TreatmentCatalogue = require('../models/treatment_catalogue.model').default;
+    const { sequelize } = require('../config/database');
 
-    const catalogue = await TreatmentCatalogue.findAll({
-      where: { is_active: true },
-      attributes: ['treatment_type_id', 'treatment_name', 'description', 'standard_cost', 'category'],
-      order: [['treatment_name', 'ASC']]
+    const treatments = await sequelize.query(`
+      SELECT 
+        treatment_id,
+        name as treatment_name,
+        description,
+        cost as standard_cost,
+        duration,
+        category,
+        icd10_code,
+        cpt_code,
+        is_active
+      FROM treatments 
+      WHERE is_active = true
+      ORDER BY category, name
+    `, {
+      type: sequelize.QueryTypes.SELECT
     });
 
     // Map to frontend expected shape
-    const treatments = catalogue.map((t: any) => ({
-      treatment_id: t.getDataValue('treatment_type_id'),
-      name: t.getDataValue('treatment_name'),
-      description: t.getDataValue('description'),
-      cost: Number(t.getDataValue('standard_cost') || 0),
-      duration: 30,
-      category: t.getDataValue('category')
+    const mappedTreatments = treatments.map((t: any) => ({
+      treatment_id: t.treatment_id,
+      name: t.treatment_name,
+      description: t.description,
+      cost: Number(t.standard_cost || 0),
+      duration: t.duration || 30,
+      category: t.category
     }));
 
-    res.status(200).json(treatments);
+    res.status(200).json(mappedTreatments);
   } catch (err) {
     console.error('Get patient treatments error:', err);
     res.status(500).json({ error: 'Failed to fetch treatments', details: err });

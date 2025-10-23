@@ -49,7 +49,18 @@ export const login = async (req: Request, res: Response) => {
       `User login: ${user.getDataValue('email')}`
     );
 
-    res.status(200).json({ token });
+    res.status(200).json({ 
+      token,
+      user: {
+        user_id: user.getDataValue('user_id'),
+        role: role?.getDataValue('name'),
+        branch_id: user.getDataValue('branch_id'),
+        branch_name: branch?.getDataValue('name'),
+        staff_title: user.getDataValue('staff_title'),
+        email: user.getDataValue('email'),
+        full_name: user.getDataValue('full_name')
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: 'Login failed', details: err });
   }

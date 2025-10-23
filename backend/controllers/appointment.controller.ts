@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
+// Import index to ensure associations are loaded
+import "../models/index";
 import Appointment from "../models/appointment.model";
-import Patient from "../models/patient.model";
 import User from "../models/user.model";
 import Branch from "../models/branch.model";
+import Patient from "../models/patient.model";
+import sequelize from "../config/database";
 import { logAuditWithRequest, auditActions } from "../services/audit.service";
-import { sendEmail } from "../services/email.service";
 
 export const createEmergencyWalkIn = async (req: Request, res: Response) => {
   try {
@@ -43,39 +45,35 @@ export const createEmergencyWalkIn = async (req: Request, res: Response) => {
       status: 'Emergency',
       is_walkin: true,
       reason: reason,
-      created_by,
-      approved_by: created_by, // Auto-approve emergency appointments
-      approved_at: new Date()
+      created_by
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.CREATE, 'Appointment', emergencyAppointment.appointment_id, 
-      `Emergency walk-in created: patient_id=${patient_id}, doctor_id=${doctor_id}, branch_id=${branch_id}, emergency_type=${emergency_type}, priority_level=${priority_level}`);
+    await logAuditWithRequest(req, auditActions.CREATE, 'Appointment', emergencyAppointment.appointment_id, {
+      action: 'Emergency walk-in created',
+      patient_id,
+      doctor_id,
+      branch_id,
+      emergency_type,
+      priority_level
+    });
 
     // Send notification to doctor
     try {
-      await sendEmail(
-        doctor.email,
-        'Emergency Walk-in Patient - MedSync Clinic',
-        `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #dc2626;">🚨 Emergency Walk-in Appointment</h2>
-            <p>Dear Dr. ${doctor.full_name},</p>
-            <p>A new emergency walk-in appointment has been scheduled:</p>
-            <div style="background-color: #fef2f2; padding: 15px; border-radius: 5px; margin: 15px 0;">
-              <p><strong>Patient:</strong> ${patient.full_name}</p>
-              <p><strong>Emergency Type:</strong> ${emergency_type || 'General Emergency'}</p>
-              <p><strong>Priority Level:</strong> ${priority_level || 'Medium'}</p>
-              <p><strong>Branch:</strong> ${branch.name}</p>
-              <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            <p>Please prepare for immediate patient care.</p>
-            <br>
-            <p>Best regards,</p>
-            <p>The MedSync Team</p>
-          </div>
-        `
-      );
+      await sendEmail({
+        to: doctor.email,
+        subject: 'Emergency Walk-in Patient',
+        template: emailTemplates.EMERGENCY_WALKIN,
+        data: {
+          doctorName: doctor.full_name,
+          patientName: patient.full_name,
+          emergencyType: emergency_type || 'General Emergency',
+          priorityLevel: priority_level || 'Medium',
+          reason: reason,
+          branchName: branch.branch_name,
+          appointmentTime: new Date().toLocaleString()
+        }
+      });
     } catch (emailError) {
       console.error('Failed to send emergency notification email:', emailError);
     }
@@ -94,7 +92,7 @@ export const createEmergencyWalkIn = async (req: Request, res: Response) => {
 
 export const getEmergencyAppointments = async (req: Request, res: Response) => {
   try {
-    const { branch_id: userBranchId } = req.user as any;
+    const { branch_id: userBranchId } = (req as any).user;
     const { status = 'Emergency', limit = 50 } = req.query;
 
     // Build branch condition
@@ -150,8 +148,13 @@ export const updateEmergencyAppointmentStatus = async (req: Request, res: Respon
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', parseInt(appointmentId), 
-      `Emergency appointment status updated: old_status=${appointment.status}, new_status=${status}, notes=${notes || 'none'}, updated_by=${updated_by}`);
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+      action: 'Emergency appointment status updated',
+      old_status: appointment.status,
+      new_status: status,
+      notes,
+      updated_by
+    });
 
     res.json({
       success: true,
@@ -167,20 +170,126 @@ export const updateEmergencyAppointmentStatus = async (req: Request, res: Respon
 
 export const getAllAppointments = async (req: Request, res: Response) => {
   try {
-    const requesterRole = (req as any).user?.role as string | undefined;
-    const where: any = {};
-    if (requesterRole === 'Doctor') {
-      where.status = 'Approved';
-      where.doctor_id = (req as any).user?.user_id || undefined;
-    }
-    const appointments = await Appointment.findAll({
-      where,
-      order: [[
-        'appointment_date', 'ASC'
-      ]]
+    const currentUser = (req as any).user;
+    const requesterRole = currentUser?.role as string | undefined;
+    const requesterBranchId = currentUser?.branch_id;
+    const requesterUserId = currentUser?.user_id;
+    
+    console.log('🔍 getAllAppointments - Current user:', {
+      role: requesterRole,
+      branch_id: requesterBranchId,
+      user_id: requesterUserId,
+      email: currentUser?.email
     });
-    res.json(appointments);
+    
+    let where: any = {};
+    
+    // Apply role-based filtering
+    if (requesterRole === 'Doctor') {
+      // Doctors can see appointments assigned to them (both approved and pending)
+      where.doctor_id = requesterUserId;
+      console.log('🔍 Doctor filtering - doctor_id:', requesterUserId);
+    } else if (requesterRole === 'Receptionist' || requesterRole === 'Branch Manager') {
+      // Receptionists and Branch Managers can see appointments from their branch
+      where.branch_id = requesterBranchId;
+      console.log('🔍 Receptionist/Branch Manager filtering - branch_id:', requesterBranchId);
+    } else if (requesterRole === 'System Administrator') {
+      // System Administrator can see all appointments
+      console.log('🔍 System Administrator - no filtering applied');
+    }
+    
+    console.log('🔍 Final where clause:', where);
+    
+    // Build WHERE conditions for SQL query
+    let whereConditions = [];
+    let replacements: any = {};
+    
+    if (where.doctor_id) {
+      whereConditions.push('a.doctor_id = :doctor_id');
+      replacements.doctor_id = where.doctor_id;
+    }
+    if (where.branch_id) {
+      whereConditions.push('a.branch_id = :branch_id');
+      replacements.branch_id = where.branch_id;
+    }
+    
+    const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+    
+    const appointments = await sequelize.query(`
+      SELECT 
+        a.*,
+        p.patient_id,
+        p.full_name as patient_name,
+        p.phone as patient_phone,
+        p.email as patient_email,
+        u.user_id as doctor_user_id,
+        u.full_name as doctor_name,
+        u.email as doctor_email,
+        b.branch_id,
+        b.name as branch_name
+      FROM appointments a
+      LEFT JOIN patients p ON a.patient_id = p.patient_id
+      LEFT JOIN users u ON a.doctor_id = u.user_id
+      LEFT JOIN branches b ON a.branch_id = b.branch_id
+      ${whereClause}
+      ORDER BY a.appointment_date ASC
+    `, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    // Transform the result to match the expected format
+    const transformedAppointments = appointments.map((apt: any) => ({
+      appointment_id: apt.appointment_id,
+      patient_id: apt.patient_id,
+      doctor_id: apt.doctor_id,
+      branch_id: apt.branch_id,
+      appointment_date: apt.appointment_date,
+      status: apt.status,
+      approval_status: apt.approval_status,
+      approved_by: apt.approved_by,
+      approved_at: apt.approved_at,
+      rejection_reason: apt.rejection_reason,
+      is_walkin: apt.is_walkin,
+      reason: apt.reason,
+      created_by: apt.created_by,
+      created_at: apt.created_at,
+      receptionist_approved_by: apt.receptionist_approved_by,
+      receptionist_approved_at: apt.receptionist_approved_at,
+      doctor_approved_by: apt.doctor_approved_by,
+      doctor_approved_at: apt.doctor_approved_at,
+      receptionist_approval_status: apt.receptionist_approval_status,
+      doctor_approval_status: apt.doctor_approval_status,
+      Patient: apt.patient_name ? {
+        patient_id: apt.patient_id,
+        full_name: apt.patient_name,
+        phone: apt.patient_phone,
+        email: apt.patient_email
+      } : null,
+      Doctor: apt.doctor_name ? {
+        user_id: apt.doctor_user_id,
+        full_name: apt.doctor_name,
+        email: apt.doctor_email
+      } : null,
+      Branch: apt.branch_name ? {
+        branch_id: apt.branch_id,
+        name: apt.branch_name
+      } : null
+    }));
+    
+    console.log('🔍 Found appointments:', transformedAppointments.length);
+    console.log('🔍 First appointment (if any):', transformedAppointments[0] ? {
+      appointment_id: transformedAppointments[0].appointment_id,
+      doctor_id: transformedAppointments[0].doctor_id,
+      patient_id: transformedAppointments[0].patient_id,
+      status: transformedAppointments[0].status,
+      patient_name: transformedAppointments[0].Patient?.full_name,
+      doctor_name: transformedAppointments[0].Doctor?.full_name
+    } : 'None');
+    
+    res.json(transformedAppointments);
   } catch (err) {
+    console.error("Error fetching appointments:", err);
     res.status(500).json({ error: "Failed to fetch appointments", details: err });
   }
 };
@@ -195,6 +304,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
+import { sendEmail, emailTemplates } from "../services/email.service";
 import { sendSMS, smsTemplates } from "../services/sms.service";
 import { scheduleReminder } from "../jobs/reminder.job";
 import { isWorkingHour, hasConflictingAppointment } from "../utils/appointment.util";
@@ -225,9 +335,30 @@ export const createAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Doctor is not available at this time" });
     }
 
-    // Status logic
-    const isStaffCreator = created_by_role && ['Receptionist', 'System Administrator', 'Branch Manager'].includes(created_by_role);
-    const initialStatus = isStaffCreator ? 'Approved' : 'Pending';
+    // Status logic based on hierarchical approval system
+    const currentUser = (req as any).user;
+    const currentUserRole = currentUser?.role;
+    
+    let initialStatus: string;
+    let approvedBy: number | null = null;
+    let approvedAt: Date | null = null;
+    
+    if (currentUserRole === 'Doctor') {
+      // Doctors are auto-approved (no approval needed)
+      initialStatus = 'Approved';
+      approvedBy = currentUser.user_id;
+      approvedAt = new Date();
+    } else if (['Receptionist', 'Branch Manager', 'System Administrator'].includes(currentUserRole)) {
+      // Staff appointments are auto-approved
+      initialStatus = 'Approved';
+      approvedBy = currentUser.user_id;
+      approvedAt = new Date();
+    } else {
+      // Patient appointments need Branch Manager approval
+      initialStatus = 'Pending';
+      approvedBy = null;
+      approvedAt = null;
+    }
 
     // Create appointment
     const appointment = await Appointment.create({
@@ -237,9 +368,9 @@ export const createAppointment = async (req: Request, res: Response) => {
       appointment_date: appointmentTime,
       reason,
       status: initialStatus as any,
-      approved_by: isStaffCreator ? (req as any).user?.user_id || null : null,
-      approved_at: isStaffCreator ? new Date() : null,
-      created_by: (req as any).user?.user_id || null
+      approved_by: approvedBy,
+      approved_at: approvedAt,
+      created_by: currentUser?.user_id || null
     });
 
     // Fetch patient and doctor details for notifications
@@ -251,26 +382,17 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     // Send confirmation email based on status
     if (patient?.email && initialStatus === 'Approved') {
+      const emailTemplate = (emailTemplates as any).appointmentConfirmation(
+        patient.getDataValue('full_name'),
+        appointmentTime,
+        doctor?.getDataValue('full_name') || 'your doctor',
+        branch?.getDataValue('name') || 'our clinic',
+        reason || 'consultation'
+      );
       await sendEmail(
         patient.getDataValue('email'),
-        'Appointment Confirmed - MedSync Clinic',
-        `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #059669;">Appointment Confirmed</h2>
-            <p>Dear ${patient.getDataValue('full_name')},</p>
-            <p>Your appointment has been confirmed:</p>
-            <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
-              <p><strong>Doctor:</strong> ${doctor?.getDataValue('full_name') || 'your doctor'}</p>
-              <p><strong>Branch:</strong> ${branch?.getDataValue('name') || 'our clinic'}</p>
-              <p><strong>Date & Time:</strong> ${appointmentTime}</p>
-              <p><strong>Reason:</strong> ${reason || 'consultation'}</p>
-            </div>
-            <p>Please arrive 15 minutes early for your appointment.</p>
-            <br>
-            <p>Best regards,</p>
-            <p>The MedSync Team</p>
-          </div>
-        `
+        emailTemplate.subject,
+        emailTemplate.html
       );
     }
     // For Pending requests, skip email unless a template exists in the future
@@ -322,6 +444,7 @@ export const createAppointmentAsPatient = async (req: Request, res: Response) =>
     }
 
     const { doctor_id, branch_id, appointment_date, reason } = req.body;
+    
     if (!doctor_id || !appointment_date) {
       return res.status(400).json({ error: "Missing required fields: doctor_id and appointment_date are required" });
     }
@@ -330,9 +453,11 @@ export const createAppointmentAsPatient = async (req: Request, res: Response) =>
     if (appointmentTime < new Date()) {
       return res.status(400).json({ error: "Appointment date must be in the future" });
     }
+    
     if (!isWorkingHour(appointmentTime)) {
       return res.status(400).json({ error: "Appointment must be during working hours" });
     }
+    
     const conflict = await hasConflictingAppointment(doctor_id, appointmentTime);
     if (conflict) {
       return res.status(400).json({ error: "Doctor is not available at this time" });
@@ -344,7 +469,10 @@ export const createAppointmentAsPatient = async (req: Request, res: Response) =>
       branch_id: branch_id || null,
       appointment_date: appointmentTime,
       reason,
-      status: 'Pending' as any,
+      status: 'Scheduled' as any,  // Use 'Scheduled' instead of 'Pending'
+      approval_status: 'Pending' as any,  // Use approval_status for pending approval
+      receptionist_approval_status: 'Pending' as any,
+      doctor_approval_status: 'Pending' as any,
       created_by: (req as any).user?.user_id || null
     });
 
@@ -367,17 +495,47 @@ export const createAppointmentAsPatient = async (req: Request, res: Response) =>
   }
 };
 
-export const approveAppointment = async (req: Request, res: Response) => {
+// Receptionist approval - first step in dual approval workflow
+export const approveAppointmentByReceptionist = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByPk(req.params.id);
     if (!appointment) return res.status(404).json({ error: "Appointment not found" });
 
+    const currentUser = (req as any).user;
+    const currentUserRole = currentUser?.role;
+    const currentUserBranchId = currentUser?.branch_id;
+
+    // Only Receptionists can approve at this stage
+    if (currentUserRole !== 'Receptionist') {
+      return res.status(403).json({ error: "Only Receptionists can perform this action" });
+    }
+
+    // Check if already approved by receptionist
+    if (appointment.getDataValue('receptionist_approval_status') === 'Approved') {
+      return res.status(400).json({ error: "Appointment already approved by receptionist" });
+    }
+
+    // Check if rejected by receptionist
+    if (appointment.getDataValue('receptionist_approval_status') === 'Rejected') {
+      return res.status(400).json({ error: "Appointment already rejected by receptionist" });
+    }
+
+    // Branch-based access control
+    const appointmentBranchId = appointment.getDataValue('branch_id');
+    if (appointmentBranchId !== currentUserBranchId) {
+      return res.status(403).json({ 
+        error: "Access denied: You can only approve appointments for your branch" 
+      });
+    }
+
     await appointment.update({
-      status: 'Approved' as any,
-      approved_by: (req as any).user?.user_id || null,
-      approved_at: new Date(),
-      rejection_reason: null
+      receptionist_approval_status: 'Approved' as any,
+      receptionist_approved_by: currentUser?.user_id || null,
+      receptionist_approved_at: new Date()
     });
+
+    // Check if both approvals are complete
+    await checkAndUpdateFinalApprovalStatus(appointment);
 
     // Audit
     await logAuditWithRequest(
@@ -385,47 +543,146 @@ export const approveAppointment = async (req: Request, res: Response) => {
       auditActions.APPOINTMENT_UPDATED,
       'appointments',
       (appointment as any).appointment_id,
-      `Approved appointment ID: ${(appointment as any).appointment_id}`
+      `Receptionist approved appointment ID: ${(appointment as any).appointment_id}`
     );
 
-    // Notify patient on approval (best-effort)
+    res.json({ 
+      message: 'Appointment approved by receptionist. Waiting for doctor approval.', 
+      appointment 
+    });
+  } catch (err) {
+    res.status(400).json({ error: 'Receptionist approval failed', details: err });
+  }
+};
+
+// Doctor approval - second step in dual approval workflow
+export const approveAppointmentByDoctor = async (req: Request, res: Response) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    const currentUser = (req as any).user;
+    const currentUserRole = currentUser?.role;
+
+    // Only Doctors can approve at this stage
+    if (currentUserRole !== 'Doctor') {
+      return res.status(403).json({ error: "Only Doctors can perform this action" });
+    }
+
+    // Check if appointment is for this doctor
+    const appointmentDoctorId = appointment.getDataValue('doctor_id');
+    if (appointmentDoctorId !== currentUser?.user_id) {
+      return res.status(403).json({ 
+        error: "Access denied: You can only approve appointments assigned to you" 
+      });
+    }
+
+    // Check if already approved by doctor
+    if (appointment.getDataValue('doctor_approval_status') === 'Approved') {
+      return res.status(400).json({ error: "Appointment already approved by doctor" });
+    }
+
+    // Check if rejected by doctor
+    if (appointment.getDataValue('doctor_approval_status') === 'Rejected') {
+      return res.status(400).json({ error: "Appointment already rejected by doctor" });
+    }
+
+    // Check if receptionist has approved first
+    if (appointment.getDataValue('receptionist_approval_status') !== 'Approved') {
+      return res.status(400).json({ 
+        error: "Appointment must be approved by receptionist first" 
+      });
+    }
+
+    await appointment.update({
+      doctor_approval_status: 'Approved' as any,
+      doctor_approved_by: currentUser?.user_id || null,
+      doctor_approved_at: new Date()
+    });
+
+    // Check if both approvals are complete
+    await checkAndUpdateFinalApprovalStatus(appointment);
+
+    // Audit
+    await logAuditWithRequest(
+      req,
+      auditActions.APPOINTMENT_UPDATED,
+      'appointments',
+      (appointment as any).appointment_id,
+      `Doctor approved appointment ID: ${(appointment as any).appointment_id}`
+    );
+
+    // Notify patient on final approval
     try {
       const patient = await Patient.findByPk(appointment.getDataValue('patient_id'));
       const doctor = await User.findByPk(appointment.getDataValue('doctor_id'));
       const branch = await Branch.findByPk(appointment.getDataValue('branch_id'));
       const when = appointment.getDataValue('appointment_date');
       if (patient?.email) {
-        await sendEmail(
-          patient.getDataValue('email'),
-          'Appointment Approved - MedSync Clinic',
-          `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #059669;">Appointment Approved</h2>
-              <p>Dear ${patient.getDataValue('full_name')},</p>
-              <p>Your appointment has been approved:</p>
-              <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p><strong>Doctor:</strong> ${doctor?.getDataValue('full_name') || 'your doctor'}</p>
-                <p><strong>Branch:</strong> ${branch?.getDataValue('name') || 'our clinic'}</p>
-                <p><strong>Date & Time:</strong> ${when}</p>
-                <p><strong>Reason:</strong> ${appointment.getDataValue('reason') || 'consultation'}</p>
-              </div>
-              <p>Please arrive 15 minutes early for your appointment.</p>
-              <br>
-              <p>Best regards,</p>
-              <p>The MedSync Team</p>
-            </div>
-          `
+        const emailTemplate = (emailTemplates as any).appointmentConfirmation(
+          patient.getDataValue('full_name'),
+          when,
+          doctor?.getDataValue('full_name') || 'your doctor',
+          branch?.getDataValue('name') || 'our clinic',
+          appointment.getDataValue('reason') || 'consultation'
         );
+        await sendEmail(patient.getDataValue('email'), emailTemplate.subject, emailTemplate.html);
       }
       if (patient?.phone) {
-        const smsText = `Your appointment with Dr. ${doctor?.getDataValue('full_name') || 'your doctor'} at ${branch?.getDataValue('name') || 'our clinic'} on ${(when as Date).toLocaleString()} has been approved. Reason: ${appointment.getDataValue('reason') || 'consultation'}`;
+        const smsText = smsTemplates.appointmentConfirmation(
+          patient.getDataValue('full_name'),
+          (when as Date).toISOString(),
+          doctor?.getDataValue('full_name') || 'your doctor',
+          branch?.getDataValue('name') || 'our clinic',
+          appointment.getDataValue('reason') || 'consultation'
+        );
         await sendSMS(patient.getDataValue('phone'), smsText);
       }
     } catch {}
 
-    res.json({ message: 'Appointment approved', appointment });
+    res.json({ 
+      message: 'Appointment fully approved! Patient has been notified.', 
+      appointment 
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Approval failed', details: err });
+    res.status(400).json({ error: 'Doctor approval failed', details: err });
+  }
+};
+
+// Helper function to check and update final approval status
+const checkAndUpdateFinalApprovalStatus = async (appointment: any) => {
+  const receptionistStatus = appointment.getDataValue('receptionist_approval_status');
+  const doctorStatus = appointment.getDataValue('doctor_approval_status');
+
+  if (receptionistStatus === 'Approved' && doctorStatus === 'Approved') {
+    // Both approved - final approval
+    await appointment.update({
+      approval_status: 'Approved' as any,
+      approved_by: appointment.getDataValue('doctor_approved_by'),
+      approved_at: appointment.getDataValue('doctor_approved_at')
+    });
+  } else if (receptionistStatus === 'Rejected' || doctorStatus === 'Rejected') {
+    // Either rejected - final rejection
+    await appointment.update({
+      approval_status: 'Rejected' as any,
+      approved_by: null,
+      approved_at: null
+    });
+  }
+  // Otherwise, keep as Pending
+};
+
+// Legacy function for backward compatibility (now redirects to appropriate approval)
+export const approveAppointment = async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  const currentUserRole = currentUser?.role;
+
+  if (currentUserRole === 'Receptionist') {
+    return approveAppointmentByReceptionist(req, res);
+  } else if (currentUserRole === 'Doctor') {
+    return approveAppointmentByDoctor(req, res);
+  } else {
+    return res.status(403).json({ error: "Invalid role for appointment approval" });
   }
 };
 
@@ -434,6 +691,25 @@ export const rejectAppointment = async (req: Request, res: Response) => {
     const { reason } = req.body;
     const appointment = await Appointment.findByPk(req.params.id);
     if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    const currentUser = (req as any).user;
+    const currentUserRole = currentUser?.role;
+    const currentUserBranchId = currentUser?.branch_id;
+
+    // Check if appointment is already rejected
+    if (appointment.getDataValue('status') === 'Rejected') {
+      return res.status(400).json({ error: "Appointment is already rejected" });
+    }
+
+    // Branch Manager can only reject appointments for their branch
+    if (currentUserRole === 'Branch Manager') {
+      const appointmentBranchId = appointment.getDataValue('branch_id');
+      if (appointmentBranchId !== currentUserBranchId) {
+        return res.status(403).json({ 
+          error: "Access denied: You can only reject appointments for your branch" 
+        });
+      }
+    }
 
     await appointment.update({
       status: 'Rejected' as any,
@@ -607,7 +883,8 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     const newDate = new Date(new_appointment_date);
     const hasConflict = await hasConflictingAppointment(
       appointment.doctor_id!,
-      newDate
+      newDate,
+      appointmentId
     );
 
     if (hasConflict) {
@@ -630,8 +907,13 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     });
 
     // Log audit trail
-    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', parseInt(appointmentId), 
-      `Appointment rescheduled: old_date=${oldDate?.toISOString()}, new_date=${newDate.toISOString()}, reason=${reason || 'none'}, rescheduled_by=${rescheduled_by}`);
+    await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+      action: 'Appointment rescheduled',
+      old_date: oldDate,
+      new_date: newDate,
+      reason,
+      rescheduled_by
+    });
 
     // Notify patient if requested
     if (notify_patient) {
@@ -641,33 +923,30 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         const branch = await Branch.findByPk(appointment.branch_id!);
 
         if (patient?.email) {
-          await sendEmail(
-            patient.email,
-            'Appointment Rescheduled - MedSync Clinic',
-            `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #059669;">Appointment Rescheduled</h2>
-                <p>Dear ${patient.full_name},</p>
-                <p>Your appointment has been rescheduled:</p>
-                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                  <p><strong>Doctor:</strong> ${doctor?.full_name || 'your doctor'}</p>
-                  <p><strong>Branch:</strong> ${branch?.name || 'our clinic'}</p>
-                  <p><strong>Previous Date:</strong> ${oldDate?.toLocaleString()}</p>
-                  <p><strong>New Date:</strong> ${newDate.toLocaleString()}</p>
-                  <p><strong>Reason:</strong> ${reason || 'No reason provided'}</p>
-                </div>
-                <p>Please make note of the new appointment time.</p>
-                <br>
-                <p>Best regards,</p>
-                <p>The MedSync Team</p>
-              </div>
-            `
-          );
+          await sendEmail({
+            to: patient.email,
+            subject: 'Appointment Rescheduled',
+            template: emailTemplates.APPOINTMENT_RESCHEDULED,
+            data: {
+              patientName: patient.full_name,
+              doctorName: doctor?.full_name || 'your doctor',
+              branchName: branch?.branch_name || 'our clinic',
+              oldDate: oldDate?.toLocaleString(),
+              newDate: newDate.toLocaleString(),
+              reason: reason || 'No reason provided'
+            }
+          });
         }
 
         if (patient?.phone) {
-          const smsText = `Your appointment has been rescheduled to ${newDate.toLocaleString()} with Dr. ${doctor?.full_name || 'your doctor'}. Please make note of the new time.`;
-          await sendSMS(patient.phone, smsText);
+          await sendSMS({
+            to: patient.phone,
+            message: smsTemplates.appointmentRescheduled(
+              patient.full_name,
+              newDate.toLocaleString(),
+              doctor?.full_name || 'your doctor'
+            )
+          });
         }
       } catch (notificationError) {
         console.error('Failed to send rescheduling notification:', notificationError);
@@ -760,7 +1039,8 @@ export const bulkRescheduleAppointments = async (req: Request, res: Response) =>
         const newDate = new Date(new_appointment_date);
         const hasConflict = await hasConflictingAppointment(
           appointment.doctor_id!,
-          newDate
+          newDate,
+          appointmentId
         );
 
         if (hasConflict) {
@@ -776,8 +1056,13 @@ export const bulkRescheduleAppointments = async (req: Request, res: Response) =>
         });
 
         // Log audit trail
-        await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, 
-          `Bulk appointment rescheduled: old_date=${appointment.appointment_date?.toISOString()}, new_date=${newDate.toISOString()}, reason=${reason || 'none'}, rescheduled_by=${rescheduled_by}`);
+        await logAuditWithRequest(req, auditActions.UPDATE, 'Appointment', appointmentId, {
+          action: 'Bulk appointment rescheduled',
+          old_date: appointment.appointment_date,
+          new_date: newDate,
+          reason,
+          rescheduled_by
+        });
 
         results.push({
           appointmentId,

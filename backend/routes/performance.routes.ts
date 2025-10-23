@@ -14,7 +14,7 @@ router.use(authenticateToken); // All routes secured
 // ===== PHASE 5: PERFORMANCE MONITORING & OPTIMIZATION =====
 
 // Performance monitoring routes
-router.get("/database-performance", authorizeRoles("System Administrator"), getDatabasePerformance);
+router.get("/database-performance", authorizeRoles("System Administrator", "Branch Manager"), getDatabasePerformance);
 router.get("/system-health", authorizeRoles("System Administrator", "Branch Manager"), getSystemHealth);
 router.post("/optimize", authorizeRoles("System Administrator"), optimizeDatabase);
 

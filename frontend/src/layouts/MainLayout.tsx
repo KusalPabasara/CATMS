@@ -71,13 +71,11 @@ export default function MainLayout() {
     // Branch Manager specific tabs
     ...(user?.role === 'Branch Manager' ? [
       { name: 'Doctors +', href: '/admin/doctors-management', icon: <PersonAddIcon /> },
-      { name: 'Crew +', href: '/admin/crew-management', icon: <PersonAddIcon /> },
     ] : []),
     
     // General admin tabs (for System Administrator and Branch Manager)
     ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [
-      { name: 'Users', href: '/admin/users', icon: <PersonAddIcon /> },
-      { name: 'Doctors', href: '/admin/doctors', icon: <PersonAddIcon /> },
+      { name: 'Crew +', href: '/admin/users', icon: <PersonAddIcon /> },
     ] : []),
     
     { name: 'Appointments', href: '/admin/appointments', icon: <CalendarIcon /> },
@@ -92,14 +90,14 @@ export default function MainLayout() {
     // Insurance only for admin/staff (not nurses)
     ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Insurance', href: '/admin/insurance', icon: <InsuranceIcon /> }] : []),
     
-    // Reports only for admin/staff (not nurses)
-    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Reports', href: '/admin/reports', icon: <ReportsIcon /> }] : []),
+    // Reports only for admin/staff (not nurses or receptionists)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [{ name: 'Reports', href: '/admin/reports', icon: <ReportsIcon /> }] : []),
     
-    // Performance only for admin/staff (not nurses)
-    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Performance', href: '/admin/performance', icon: <PerformanceIcon /> }] : []),
+    // Performance only for admin/staff (not nurses or receptionists)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [{ name: 'Performance', href: '/admin/performance', icon: <PerformanceIcon /> }] : []),
     
-    // Audit Logs only for admin/staff (not nurses)
-    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' || user?.role === 'Receptionist' ? [{ name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> }] : []),
+    // Audit Logs only for admin/staff (not nurses or receptionists)
+    ...(user?.role === 'System Administrator' || user?.role === 'Branch Manager' ? [{ name: 'Audit Logs', href: '/admin/audit-logs', icon: <SecurityIcon /> }] : []),
     
     // AI Medical Assistant ONLY for doctors
     ...(user?.role === 'Doctor' ? [{ name: 'AI Medical Assistant', href: '/admin/doctor-profile', icon: <PsychologyIcon /> }] : []),

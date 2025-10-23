@@ -7,11 +7,7 @@ interface AppointmentAttributes {
   doctor_id: number | null;
   branch_id: number | null;
   appointment_date: Date | null;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
-  approval_status: 'Pending' | 'Approved' | 'Rejected' | null;
-  approved_by: number | null;
-  approved_at: Date | null;
-  rejection_reason: string | null;
+  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
   is_walkin: boolean | null;
   reason: string | null;
   created_by: number | null;
@@ -26,11 +22,7 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
   public doctor_id!: number | null;
   public branch_id!: number | null;
   public appointment_date!: Date | null;
-  public status!: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
-  public approval_status!: 'Pending' | 'Approved' | 'Rejected' | null;
-  public approved_by!: number | null;
-  public approved_at!: Date | null;
-  public rejection_reason!: string | null;
+  public status!: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
   public is_walkin!: boolean | null;
   public reason!: string | null;
   public created_by!: number | null;
@@ -64,29 +56,14 @@ Appointment.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Scheduled', 'Completed', 'Cancelled', 'No-Show', 'Emergency'),
+      type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled', 'No-Show', 'Emergency'),
       allowNull: true,
-    },
-    approval_status: {
-      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
-      allowNull: true,
-      defaultValue: 'Pending',
-    },
-    approved_by: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    approved_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    rejection_reason: {
-      type: DataTypes.TEXT,
-      allowNull: true,
+      defaultValue: 'Scheduled',
     },
     is_walkin: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
+      defaultValue: false,
     },
     reason: {
       type: DataTypes.TEXT,

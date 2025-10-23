@@ -11,6 +11,8 @@ import Branch from "../models/branch.model";
 import Treatment from "../models/treatment.model";
 import TreatmentCatalogue from "../models/treatment_catalogue.model";
 import InsuranceClaim from "../models/insurance_claim.model";
+import PatientInsurance from "../models/patient_insurance.model";
+import InsurancePolicy from "../models/insurance_policy.model";
 
 export const getDashboardOverview = async (req: Request, res: Response) => {
   try {
@@ -573,16 +575,21 @@ export const getTreatmentCategoryReport = async (req: Request, res: Response) =>
 
     const raw = await sequelize.query(`
       SELECT 
-        tc.category,
-        tc.treatment_name,
-        0 as treatment_count,
-        0 as total_quantity,
-        tc.standard_cost as avg_price,
-        0 as total_revenue
-      FROM treatment_catalogue tc
-      WHERE tc.is_active = true
+        t.category,
+        t.name as treatment_name,
+        COUNT(tr.record_id) as treatment_count,
+        COUNT(tr.record_id) as total_quantity,
+        AVG(t.cost) as avg_price,
+        SUM(t.cost) as total_revenue
+      FROM treatments t
+      LEFT JOIN treatment_records tr ON t.treatment_id = tr.treatment_id
+      LEFT JOIN appointments a ON tr.appointment_id = a.appointment_id
+      WHERE t.is_active = true
       ${categoryCondition}
-      ORDER BY tc.category, tc.treatment_name
+      ${dateCondition}
+      ${branchCondition}
+      GROUP BY t.treatment_id, t.category, t.name, t.cost
+      ORDER BY t.category, t.name
     `);
 
 
@@ -647,6 +654,65 @@ export const getInsuranceVsOutOfPocketReport = async (req: Request, res: Respons
     res.json({
       success: true,
       data: raw,
+      period: {
+        startDate: startDate || 'All time',
+        endDate: endDate || 'All time'
+      }
+    });
+
+    // Calculate totals
+    let totalRevenue = 0;
+    let totalInsuranceCoverage = 0;
+    let totalOutOfPocket = 0;
+    let insuranceClaimsCount = 0;
+    let outOfPocketCount = 0;
+
+    // Process invoices
+    invoices.forEach(invoice => {
+      const totalAmount = parseFloat(invoice.total_amount.toString());
+      const paidAmount = parseFloat(invoice.paid_amount.toString());
+      
+      totalRevenue += totalAmount;
+      
+      // Check if this invoice has insurance coverage
+      const hasInsurance = insuranceClaims.some(claim => 
+        claim.patient_id === invoice.Patient?.user_id
+      );
+      
+      if (hasInsurance) {
+        totalInsuranceCoverage += paidAmount;
+        insuranceClaimsCount += 1;
+      } else {
+        totalOutOfPocket += paidAmount;
+        outOfPocketCount += 1;
+      }
+    });
+
+    // Process insurance claims
+    const insuranceBreakdown = insuranceClaims.reduce((acc: any, claim) => {
+      const companyName = claim.InsurancePolicy?.insurance_company_name || 'Unknown';
+      
+      if (!acc[companyName]) {
+        acc[companyName] = {
+          company: companyName,
+          total_claims: 0,
+          total_covered: 0,
+          total_patient_responsibility: 0,
+          claim_count: 0
+        };
+      }
+      
+      acc[companyName].total_claims += parseFloat(claim.claim_amount.toString());
+      acc[companyName].total_covered += parseFloat(claim.covered_amount.toString());
+      acc[companyName].total_patient_responsibility += parseFloat(claim.patient_responsibility.toString());
+      acc[companyName].claim_count += 1;
+      
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      data: raw[0],
       period: {
         startDate: startDate || 'All time',
         endDate: endDate || 'All time'
