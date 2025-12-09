@@ -67,7 +67,6 @@ export const auditActions = {
   
   // Treatment session actions
   TREATMENT_SESSION_CREATED: "Treatment Session Created",
-  USER_UPDATED: "User Updated",
   USER_DEACTIVATED: "User Deactivated",
   
   // Treatment actions
@@ -108,7 +107,7 @@ export const logAuditWithRequest = async (
   action: string, 
   targetTable: string, 
   targetId?: number,
-  details?: string
+  details?: string | any
 ) => {
   if (!req.user?.user_id) {
     console.warn("⚠️ Cannot log audit: No user context");
@@ -121,6 +120,6 @@ export const logAuditWithRequest = async (
     target_table: targetTable,
     target_id: targetId,
     ip_address: getClientIP(req),
-    details
+    details: typeof details === 'string' ? details : JSON.stringify(details)
   });
 };

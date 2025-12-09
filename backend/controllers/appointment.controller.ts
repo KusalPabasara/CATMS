@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { QueryTypes } from 'sequelize';
 // Import index to ensure associations are loaded
 import "../models/index";
 import Appointment from "../models/appointment.model";
@@ -60,20 +61,17 @@ export const createEmergencyWalkIn = async (req: Request, res: Response) => {
 
     // Send notification to doctor
     try {
-      await sendEmail({
-        to: doctor.email,
-        subject: 'Emergency Walk-in Patient',
-        template: emailTemplates.EMERGENCY_WALKIN,
-        data: {
-          doctorName: doctor.full_name,
-          patientName: patient.full_name,
-          emergencyType: emergency_type || 'General Emergency',
-          priorityLevel: priority_level || 'Medium',
-          reason: reason,
-          branchName: branch.branch_name,
-          appointmentTime: new Date().toLocaleString()
-        }
-      });
+      const emailTemplate = emailTemplates.EMERGENCY_WALKIN(
+        doctor.full_name,
+        patient.full_name,
+        emergency_type || 'General Emergency',
+        branch.name || branch.branch_name || 'Main Branch'
+      );
+      await sendEmail(
+        doctor.email,
+        emailTemplate.subject,
+        emailTemplate.html
+      );
     } catch (emailError) {
       console.error('Failed to send emergency notification email:', emailError);
     }
@@ -122,7 +120,11 @@ export const getEmergencyAppointments = async (req: Request, res: Response) => {
 
 export const updateEmergencyAppointmentStatus = async (req: Request, res: Response) => {
   try {
-    const { appointmentId } = req.params;
+    const appointmentId = Number(req.params.appointmentId);
+    if (Number.isNaN(appointmentId)) {
+      return res.status(400).json({ error: 'Invalid appointment ID' });
+    }
+    
     const { status, notes } = req.body;
     const updated_by = (req as any).user?.user_id;
 
@@ -235,7 +237,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
       ORDER BY a.appointment_date ASC
     `, {
       replacements,
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
     
     // Transform the result to match the expected format
@@ -860,7 +862,11 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 
 export const rescheduleAppointment = async (req: Request, res: Response) => {
   try {
-    const { appointmentId } = req.params;
+    const appointmentId = Number(req.params.appointmentId);
+    if (Number.isNaN(appointmentId)) {
+      return res.status(400).json({ error: 'Invalid appointment ID' });
+    }
+    
     const { new_appointment_date, reason, notify_patient = true } = req.body;
     const rescheduled_by = (req as any).user?.user_id;
 
@@ -923,30 +929,29 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         const branch = await Branch.findByPk(appointment.branch_id!);
 
         if (patient?.email) {
-          await sendEmail({
-            to: patient.email,
-            subject: 'Appointment Rescheduled',
-            template: emailTemplates.APPOINTMENT_RESCHEDULED,
-            data: {
-              patientName: patient.full_name,
-              doctorName: doctor?.full_name || 'your doctor',
-              branchName: branch?.branch_name || 'our clinic',
-              oldDate: oldDate?.toLocaleString(),
-              newDate: newDate.toLocaleString(),
-              reason: reason || 'No reason provided'
-            }
-          });
+          const emailTemplate = emailTemplates.APPOINTMENT_RESCHEDULED(
+            patient.full_name,
+            oldDate || new Date(),
+            newDate,
+            doctor?.full_name || 'your doctor',
+            branch?.name || branch?.branch_name || 'our clinic'
+          );
+          await sendEmail(
+            patient.email,
+            emailTemplate.subject,
+            emailTemplate.html
+          );
         }
 
         if (patient?.phone) {
-          await sendSMS({
-            to: patient.phone,
-            message: smsTemplates.appointmentRescheduled(
+          await sendSMS(
+            patient.phone,
+            smsTemplates.appointmentRescheduled(
               patient.full_name,
               newDate.toLocaleString(),
               doctor?.full_name || 'your doctor'
             )
-          });
+          );
         }
       } catch (notificationError) {
         console.error('Failed to send rescheduling notification:', notificationError);

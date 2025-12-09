@@ -17,6 +17,7 @@ interface UserAttributes {
   last_login?: Date;
   Role?: Role;
   Branch?: Branch;
+  DoctorSpecialties?: any[];
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, 'user_id' | 'is_active' | 'created_at'> {}
@@ -37,6 +38,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   // Associations
   public readonly Role?: Role;
   public readonly Branch?: Branch;
+  public readonly DoctorSpecialties?: any[];
 }
 
 User.init({

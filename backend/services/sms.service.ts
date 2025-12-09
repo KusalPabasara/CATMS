@@ -64,5 +64,8 @@ export const smsTemplates = {
     `Hi ${patientName}! Payment of Rs. ${amount.toFixed(2)} for invoice ${invoiceNumber} received. Status: ${status}. Thank you!`,
 
   treatmentSessionScheduled: (patientName: string, sessionDate: string, treatmentName: string) => 
-    `Hi ${patientName}! Your ${treatmentName} session is scheduled for ${sessionDate}. Please arrive 15 minutes early.`
+    `Hi ${patientName}! Your ${treatmentName} session is scheduled for ${sessionDate}. Please arrive 15 minutes early.`,
+
+  appointmentRescheduled: (patientName: string, newDate: string, doctorName: string) => 
+    `Hi ${patientName}! Your appointment has been rescheduled to ${newDate} with Dr. ${doctorName}. Please arrive 10 minutes early.`
 };

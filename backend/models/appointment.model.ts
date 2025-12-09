@@ -7,11 +7,21 @@ interface AppointmentAttributes {
   doctor_id: number | null;
   branch_id: number | null;
   appointment_date: Date | null;
-  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
+  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | 'Rejected' | null;
   is_walkin: boolean | null;
   reason: string | null;
   created_by: number | null;
   created_at: Date | null;
+  approved_by?: number | null;
+  approved_at?: Date | null;
+  approval_status?: string | null;
+  receptionist_approval_status?: string | null;
+  receptionist_approved_by?: number | null;
+  receptionist_approved_at?: Date | null;
+  doctor_approval_status?: string | null;
+  doctor_approved_by?: number | null;
+  doctor_approved_at?: Date | null;
+  rejection_reason?: string | null;
 }
 
 interface AppointmentCreationAttributes extends Optional<AppointmentAttributes, 'appointment_id' | 'created_at'> {}
@@ -22,11 +32,21 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
   public doctor_id!: number | null;
   public branch_id!: number | null;
   public appointment_date!: Date | null;
-  public status!: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | null;
+  public status!: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show' | 'Emergency' | 'Rejected' | null;
   public is_walkin!: boolean | null;
   public reason!: string | null;
   public created_by!: number | null;
   public created_at!: Date | null;
+  public approved_by?: number | null;
+  public approved_at?: Date | null;
+  public approval_status?: string | null;
+  public receptionist_approval_status?: string | null;
+  public receptionist_approved_by?: number | null;
+  public receptionist_approved_at?: Date | null;
+  public doctor_approval_status?: string | null;
+  public doctor_approved_by?: number | null;
+  public doctor_approved_at?: Date | null;
+  public rejection_reason?: string | null;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -56,7 +76,7 @@ Appointment.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled', 'No-Show', 'Emergency'),
+      type: DataTypes.ENUM('Scheduled', 'Completed', 'Cancelled', 'No-Show', 'Emergency', 'Rejected'),
       allowNull: true,
       defaultValue: 'Scheduled',
     },
@@ -77,6 +97,22 @@ Appointment.init(
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: DataTypes.NOW,
+    },
+    approved_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    approval_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    receptionist_approval_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    doctor_approval_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {
