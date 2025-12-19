@@ -312,4 +312,46 @@ export const emailTemplates = {
     `
   }),
 
+  EMERGENCY_WALKIN: (doctorName: string, patientName: string, emergencyType: string, branchName: string) => ({
+    subject: 'URGENT: Emergency Walk-in Patient',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">URGENT: Emergency Walk-in Patient</h2>
+        <p>Dear Dr. ${doctorName},</p>
+        <p>An emergency walk-in patient requires immediate attention:</p>
+        <div style="background-color: #fee2e2; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Patient:</strong> ${patientName}</p>
+          <p><strong>Emergency Type:</strong> ${emergencyType}</p>
+          <p><strong>Location:</strong> ${branchName}</p>
+          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        <p>Please attend to this patient as soon as possible.</p>
+        <br>
+        <p>Best regards,</p>
+        <p>The MedSync Team</p>
+      </div>
+    `
+  }),
+
+  APPOINTMENT_RESCHEDULED: (patientName: string, oldDate: Date, newDate: Date, doctorName: string, branchName: string) => ({
+    subject: 'Appointment Rescheduled',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #059669;">Appointment Rescheduled</h2>
+        <p>Dear ${patientName},</p>
+        <p>Your appointment has been rescheduled:</p>
+        <div style="background-color: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Previous Date:</strong> ${oldDate.toLocaleString()}</p>
+          <p><strong>New Date:</strong> ${newDate.toLocaleString()}</p>
+          <p><strong>Doctor:</strong> Dr. ${doctorName}</p>
+          <p><strong>Location:</strong> ${branchName}</p>
+        </div>
+        <p>Please arrive 10 minutes before your scheduled time.</p>
+        <br>
+        <p>Best regards,</p>
+        <p>The MedSync Team</p>
+      </div>
+    `
+  }),
+
 };

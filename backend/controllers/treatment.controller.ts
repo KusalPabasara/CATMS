@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { QueryTypes } from 'sequelize';
 import { sequelize } from "../config/database";
 
 export const getAllTreatments = async (_req: Request, res: Response) => {
@@ -18,7 +19,7 @@ export const getAllTreatments = async (_req: Request, res: Response) => {
       WHERE is_active = true
       ORDER BY category, name
     `, {
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
     res.json(treatments);
   } catch (err) {
@@ -43,8 +44,8 @@ export const getTreatmentById = async (req: Request, res: Response) => {
       WHERE treatment_id = :id AND is_active = true
     `, {
       replacements: { id: req.params.id },
-      type: sequelize.QueryTypes.SELECT
-    });
+      type: QueryTypes.SELECT
+    }) as any[];
     
     if (treatments.length === 0) {
       return res.status(404).json({ error: "Treatment not found" });
@@ -73,7 +74,7 @@ export const createTreatment = async (req: Request, res: Response) => {
         icd10_code,
         cpt_code
       },
-      type: sequelize.QueryTypes.INSERT
+      type: QueryTypes.INSERT
     });
     
     const newTreatment = await sequelize.query(`
@@ -91,7 +92,7 @@ export const createTreatment = async (req: Request, res: Response) => {
       WHERE treatment_id = :id
     `, {
       replacements: { id: result[0] },
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
     
     res.status(201).json(newTreatment[0]);
@@ -125,7 +126,7 @@ export const updateTreatment = async (req: Request, res: Response) => {
         icd10_code,
         cpt_code
       },
-      type: sequelize.QueryTypes.UPDATE
+      type: QueryTypes.UPDATE
     });
     
     if (result[1] === 0) {
@@ -147,7 +148,7 @@ export const updateTreatment = async (req: Request, res: Response) => {
       WHERE treatment_id = :id
     `, {
       replacements: { id: req.params.id },
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
     
     res.json(updatedTreatment[0]);
@@ -164,7 +165,7 @@ export const deleteTreatment = async (req: Request, res: Response) => {
       WHERE treatment_id = :id
     `, {
       replacements: { id: req.params.id },
-      type: sequelize.QueryTypes.UPDATE
+      type: QueryTypes.UPDATE
     });
     
     if (result[1] === 0) {

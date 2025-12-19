@@ -15,22 +15,32 @@ export const isWorkingHour = (date: Date): boolean => {
  */
 export const hasConflictingAppointment = async (
   doctorId: number,
-  appointmentTime: Date
+  appointmentTime: Date,
+  excludeAppointmentId?: number
 ): Promise<boolean> => {
   // Check 30 minutes before and after the appointment time
   const startTime = new Date(appointmentTime.getTime() - 30 * 60000);
   const endTime = new Date(appointmentTime.getTime() + 30 * 60000);
 
-  const conflicts = await Appointment.findOne({
-    where: {
-      doctor_id: doctorId,
-      appointment_date: {
-        [Op.between]: [startTime, endTime]
-      },
-      status: {
-        [Op.notIn]: ['cancelled', 'completed']
-      }
+  const whereCondition: any = {
+    doctor_id: doctorId,
+    appointment_date: {
+      [Op.between]: [startTime, endTime]
+    },
+    status: {
+      [Op.notIn]: ['cancelled', 'completed']
     }
+  };
+
+  // Exclude the current appointment if provided (for rescheduling)
+  if (excludeAppointmentId) {
+    whereCondition.appointment_id = {
+      [Op.ne]: excludeAppointmentId
+    };
+  }
+
+  const conflicts = await Appointment.findOne({
+    where: whereCondition
   });
 
   return !!conflicts;

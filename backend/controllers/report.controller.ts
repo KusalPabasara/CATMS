@@ -660,65 +660,6 @@ export const getInsuranceVsOutOfPocketReport = async (req: Request, res: Respons
       }
     });
 
-    // Calculate totals
-    let totalRevenue = 0;
-    let totalInsuranceCoverage = 0;
-    let totalOutOfPocket = 0;
-    let insuranceClaimsCount = 0;
-    let outOfPocketCount = 0;
-
-    // Process invoices
-    invoices.forEach(invoice => {
-      const totalAmount = parseFloat(invoice.total_amount.toString());
-      const paidAmount = parseFloat(invoice.paid_amount.toString());
-      
-      totalRevenue += totalAmount;
-      
-      // Check if this invoice has insurance coverage
-      const hasInsurance = insuranceClaims.some(claim => 
-        claim.patient_id === invoice.Patient?.user_id
-      );
-      
-      if (hasInsurance) {
-        totalInsuranceCoverage += paidAmount;
-        insuranceClaimsCount += 1;
-      } else {
-        totalOutOfPocket += paidAmount;
-        outOfPocketCount += 1;
-      }
-    });
-
-    // Process insurance claims
-    const insuranceBreakdown = insuranceClaims.reduce((acc: any, claim) => {
-      const companyName = claim.InsurancePolicy?.insurance_company_name || 'Unknown';
-      
-      if (!acc[companyName]) {
-        acc[companyName] = {
-          company: companyName,
-          total_claims: 0,
-          total_covered: 0,
-          total_patient_responsibility: 0,
-          claim_count: 0
-        };
-      }
-      
-      acc[companyName].total_claims += parseFloat(claim.claim_amount.toString());
-      acc[companyName].total_covered += parseFloat(claim.covered_amount.toString());
-      acc[companyName].total_patient_responsibility += parseFloat(claim.patient_responsibility.toString());
-      acc[companyName].claim_count += 1;
-      
-      return acc;
-    }, {});
-
-    res.json({
-      success: true,
-      data: raw[0],
-      period: {
-        startDate: startDate || 'All time',
-        endDate: endDate || 'All time'
-      }
-    });
-
   } catch (error) {
     console.error('Error fetching insurance vs out-of-pocket report:', error);
     res.status(500).json({ error: 'Failed to fetch insurance vs out-of-pocket report' });

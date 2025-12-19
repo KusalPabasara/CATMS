@@ -20,6 +20,7 @@ interface PatientAttributes {
   active: boolean;
   profile_picture?: string;
   created_at: Date;
+  preferred_branch_id?: number | null;
 }
 
 class Patient extends Model<PatientAttributes, PatientAttributes> {
@@ -41,6 +42,7 @@ class Patient extends Model<PatientAttributes, PatientAttributes> {
   public active!: boolean;
   public profile_picture?: string;
   public created_at!: Date;
+  public preferred_branch_id?: number | null;
 }
 
 Patient.init({

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { QueryTypes } from 'sequelize';
 import bcrypt from 'bcrypt';
 import multer from 'multer';
 import path from 'path';
@@ -387,7 +388,7 @@ export const getPatientAppointments = async (req: Request, res: Response) => {
       ORDER BY a.appointment_date DESC
     `, {
       replacements: { patientId },
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     // Transform the data to match frontend expectations
@@ -524,7 +525,7 @@ export const getPatientDoctors = async (req: Request, res: Response) => {
       WHERE r.name = 'Doctor' AND u.is_active = true
       ORDER BY u.full_name ASC
     `, {
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     // Map to frontend expected shape
@@ -564,7 +565,7 @@ export const getPatientTreatments = async (req: Request, res: Response) => {
       WHERE is_active = true
       ORDER BY category, name
     `, {
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     // Map to frontend expected shape

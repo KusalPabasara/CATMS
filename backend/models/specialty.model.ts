@@ -4,6 +4,8 @@ import sequelize from '../config/database';
 interface SpecialtyAttributes {
   specialty_id: number;
   name: string;
+  description?: string | null;
+  is_active?: boolean | number | null;
 }
 
 interface SpecialtyCreationAttributes extends Optional<SpecialtyAttributes, 'specialty_id'> {}
@@ -11,6 +13,8 @@ interface SpecialtyCreationAttributes extends Optional<SpecialtyAttributes, 'spe
 class Specialty extends Model<SpecialtyAttributes, SpecialtyCreationAttributes> implements SpecialtyAttributes {
   public specialty_id!: number;
   public name!: string;
+  public description?: string | null;
+  public is_active?: boolean | number | null;
 }
 
 Specialty.init(
